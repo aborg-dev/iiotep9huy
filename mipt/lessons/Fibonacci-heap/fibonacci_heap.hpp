@@ -1,28 +1,22 @@
+#include <vector>
 
-
-template<class node, class CmpFn>
+template<typename Key, typename Compare>
 class fibonacci_heap
 {
   protected:
 
-  vector<node> heap;
+  std::vector <Key> heap;
 
   public:
 
-  typedef vector<node>::iterator node_pointer;
+  typedef typename std::vector<Key>::iterator node_pointer;
+
+  void push(Key k);
+
+  Key top();
   
-  public:
-  
-  void push(node nd);
+  void erase(node_pointer pnode);
 
-  void erase(node_pointer p_nd);
+  void merge(fibonacci_heap H1, fibonacci_heap H2);
 
-  void pop();
-
-  node_pointer top();
-
-  private:
-
-  node_pointer p_max;
-
-}
+};
