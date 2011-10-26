@@ -4,39 +4,90 @@
 #include <vector>
 #include <time.h>
 #include <cassert>
+#include <math.h>
 
 using namespace std;
 
-long long distance(int X1, int Y1, int X2, int Y2)
+typedef long long i64;
+
+const int MAXX = 1000000000;
+const int MAXY = 1000000000;
+
+struct TPoint
 {
-  
+  int x, y;
+  TPoint(){}
+  TPoint(int x, int y): x(x), y(y) {}
+};
+
+inline double dist(TPoint &p1, TPoint &p2)
+{
+  return sqrt((i64)(p1.x-p2.x)*(p1.x-p2.x) + (i64)(p1.y-p2.y)*(p1.y-p2.y) + 0.0);
 }
 
-long long tourLen()
+inline TPoint randPoint(int maxx = MAXX, int maxy = MAXY)
 {
-  currentLocation = initialLocation
-  visited[currentLocation] = true
-  tourLength = 0 
-  while ( count(unvisited) > 0 )
-  {
-    nextLocation = unvisitedNearestTo(currentLocation) 
-    tourLength += distance(currentLocation, nextLocation)
-    currentLocation = nextLocation
-    visited[currentLocation] = true
-  }
-  tourLength += distance(currentLocation, initialLocation)
+  return TPoint(rand()%maxx, rand()%maxy);
 }
+
+vector<TPoint> P;
+vector<char> visited;
+int n, N;
+
+double calc(int start)
+{
+  int current = start, next;
+  int C = P.size();
+  visited.assign(C, 0);
+  visited[current] = 1;
+
+  double tourLength = 0.0;
+  double nextDist, tempDist;
+  for(int k=0; k<C-1; k++)
+  {
+    next = -1;
+    nextDist = 1e15;
+    for(int i=0; i<C; i++)
+    {
+      if (!visited[i])
+      {
+        tempDist = dist(P[current], P[i]);
+        if (tempDist < nextDist)
+        {
+          nextDist = tempDist;
+          next = i;
+        }
+      }
+    }
+    tourLength += nextDist;
+    current = next;
+    visited[current] = 1;
+  }
+  tourLength += dist(P[current], P[start]);
+  return tourLength;
+}
+
 
 class AntiTravelingSalesperson {
 public:
 	vector<int> placeLocations(int N, vector<int> X, vector<int> Y) {
-    vector<int> answer;
     srand(time(NULL));
+    n = X.size();
+    ::N = N;
+
+    for(int i=0; i<n; i++)
+      P.push_back(TPoint(X[i], Y[i]));
+
+    for(int i=0; i<N; i++)
+      P.push_back(randPoint());
+
+    vector<int> answer;
     for(int i=0; i<N; i++)
     {
-      answer.push_back(abs(rand()%1000000000));
-      answer.push_back(abs(rand()%1000000000));
+      answer.push_back(P[n+i].x);
+      answer.push_back(P[n+i].y);
     }
+    //fprintf(stderr, "%.9lf\n", res);
     return answer;
 	}
 
