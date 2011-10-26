@@ -5,6 +5,8 @@
 #include <time.h>
 #include <cassert>
 #include <math.h>
+#include <list>
+#include <algorithm>
 
 using namespace std;
 
@@ -18,7 +20,18 @@ struct TPoint
   int x, y;
   TPoint(){}
   TPoint(int x, int y): x(x), y(y) {}
+  bool operator==(const TPoint &v)
+  {
+    return (x == v.x) && (y == v.y);
+  }
 };
+
+bool compX(const TPoint &a, const TPoint &b)
+{
+  if (a.x != b.x)
+    return a.x < b.x;
+  return a.y < b.y;
+}
 
 inline double dist(TPoint &p1, TPoint &p2)
 {
@@ -65,6 +78,15 @@ double calc(int start)
   }
   tourLength += dist(P[current], P[start]);
   return tourLength;
+}
+
+double fastCalc(int start)
+{
+  TPoint first = P[start];
+  list<TPoint> V(P.begin(), P.end());
+  V.sort(compX);
+  list<TPoint>::iterator it;
+  for(it = V.begin(); (it != V.end()) && !(*it == first); ++it);
 }
 
 
