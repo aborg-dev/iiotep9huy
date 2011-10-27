@@ -31,6 +31,11 @@ inline double dist(TPoint &p1, TPoint &p2)
   return sqrt((i64)(p1.x-p2.x)*(p1.x-p2.x) + (i64)(p1.y-p2.y)*(p1.y-p2.y) + 0.0);
 }
 
+inline i64 dist1(TPoint &p1, TPoint &p2)
+{
+  return ((i64)(p1.x-p2.x)*(p1.x-p2.x) + (i64)(p1.y-p2.y)*(p1.y-p2.y) + 0.0);
+}
+
 inline TPoint randPoint(int type, int minx = 0, int miny = 0, int maxx = MAXX, int maxy = MAXY)
 {
   switch (type)
@@ -60,13 +65,14 @@ bool compX(const int a, const int b)
   return P[a].y < P[b].y;
 }
 
-vector<char> visited;
 int n, N;
 
 double calc(int start)
 {
   int current = start, next;
   int C = P.size();
+
+  vector<char> visited;
   visited.assign(C, 0);
   visited[current] = 1;
 
@@ -114,7 +120,7 @@ double fastCalc(int start)
 
   list<int>::iterator cur, next;
   for(cur = V.begin(); (cur != V.end()) && !(*cur == current); ++cur);
-  V.erase(cur); // To Change
+  //V.erase(cur); // To Change
 
   double tourLength = 0.0;
   double nextDist, tempDist;
@@ -122,27 +128,49 @@ double fastCalc(int start)
   {
     next = V.begin();
     nextDist = 1e15;
-    for(list<int>::iterator it = V.begin(); it != V.end(); ++it)
+    for(list<int>::iterator it = cur;; --it)
     {
-      //cerr << nextDist << endl;
-      //cerr << (P[current].x - P[*it].x) << endl;
-      //cerr << (nextDist - (P[current].x - P[*it].x)) << endl;
+      
+      if (it == cur) 
+      {
+        if (it == V.begin())
+          break;
+        continue;
+      }
+
       tempDist = dist(P[current], P[*it]);
-      if (nextDist < fabs(P[current].x - P[*it].x + 0.0))
+      if (nextDist < fabs(P[current].x - P[*it].x))
       {
         cnt++;
         break;
       }
-      if (tempDist < nextDist)
+      if (tempDist - nextDist < -1e-7 || (fabs(tempDist - nextDist) < 1e-7 && *next > *it))
+      {
+        nextDist = tempDist;
+        next = it;
+      }
+      if (it == V.begin())
+        break;
+    }
+    for(list<int>::iterator it = cur; it != V.end(); ++it)
+    {
+      if (it == cur) continue;
+      tempDist = dist(P[current], P[*it]);
+      if (nextDist < fabs(P[*it].x - P[current].x))
+      {
+        cnt++;
+        break;
+      }
+      if (tempDist - nextDist < -1e-7 || (fabs(tempDist - nextDist) < 1e-7 && *next > *it))
       {
         nextDist = tempDist;
         next = it;
       }
     }
+    V.erase(cur);
     tourLength += nextDist;
     cur = next;
     current = *cur;
-    V.erase(cur); // To Change
   }
   tourLength += dist(P[*cur], P[start]);
   return tourLength;
@@ -154,11 +182,11 @@ void isotropyGen()
     P.push_back(randPoint(1));
 }
 
-void webGen()
+void webGen(double coef)
 {
-  double coef = 11.0/(log(N)/log(2.0));
   //cerr << coef << endl;
-  int sqrtN = sqrt(N/1.2 + 0.0);
+  P.resize(n);
+  int sqrtN = sqrt(max(N*coef + 0.0, 2.0));
   int d = 1000000000 / sqrtN;
   for(int i=0; i<sqrtN; i++)
   {
@@ -169,6 +197,52 @@ void webGen()
   }
 
   isotropyGen();
+}
+
+double checkpoints[] = 
+{
+  0.81600, 0.87300, 0.83500, 0.80300, 0.81400, 0.86700, 0.78300, 0.83100, 0.82100, 0.84500, 
+  0.87300, 0.87000, 0.86100, 0.80300, 0.78700, 0.87700, 0.83100, 0.79200, 0.84500, 0.78600,
+};
+
+void coefCheck()
+{
+  vector<TPoint> Best;
+  double bAns = 0.0, Ans;
+  for(int i=0; i<20; i++)
+  {
+    webGen(checkpoints[i]);
+    Ans = fastCalc(0);
+    //Ans = calc(0);
+    if (Ans > bAns)
+    {
+      Best = P;
+      bAns = Ans;
+    }
+  }
+  P = Best;
+}
+
+void bruteforce()
+{
+  vector<TPoint> Best;
+  double bAns = 0.0, Ans, bestp;
+  for(double i = 0.001; i < 0.999; i+=0.001)
+  {
+    webGen(i);
+    Ans = fastCalc(0);
+    if (Ans > bAns)
+    {
+      //cerr << i << endl;
+      bestp = i;
+      Best = P;
+      bAns = Ans;
+    }
+  }
+  /*FILE *fout = fopen("coef.txt", "a+");
+  fprintf(fout, "%.5lf, ", bestp);
+  fclose(fout);*/
+  P = Best;
 }
 
 
@@ -184,7 +258,11 @@ public:
       P.push_back(TPoint(X[i], Y[i]));
 
     //isotropyGen();
-    webGen();
+    //webGen(1.2);
+    if (n+N < 1000)
+      bruteforce();
+    else
+      coefCheck();
 
     vector<int> answer;
     for(int i=0; i<N; i++)
@@ -193,15 +271,19 @@ public:
       answer.push_back(P[n+i].y);
     }
 
-    double t1 = clock();
+    /*double t1 = clock();
     double ans1 = calc(0);
     double t2 = clock();
+    cerr << endl;
     double ans2 = fastCalc(0);
     double t3 = clock();
     cerr << cnt << endl;
     fprintf(stderr, "%lf\n", (t2 - t1) / 1000.0);
     fprintf(stderr, "%lf\n", (t3 - t2) / 1000.0);
-    assert(ans1 == ans2);
+    cerr << ans1 << endl;
+    cerr << ans2 << endl;
+    assert(ans1 == ans2);*/
+    //cerr << clock() << endl;
     return answer;
 	}
 
@@ -236,3 +318,4 @@ int main()
 
   return 0;
 }
+
