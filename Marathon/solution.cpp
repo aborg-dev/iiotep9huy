@@ -7,6 +7,9 @@
 #include <math.h>
 #include <list>
 #include <algorithm>
+#include <memory.h>
+
+#define index my_index
 
 using namespace std;
 
@@ -14,6 +17,12 @@ typedef long long i64;
 
 const int MAXX = 1000000000;
 const int MAXY = 1000000000;
+
+const double checkpoints[] = 
+{
+  0.81600, 0.87300, 0.83500, 0.80300, 0.81400, 0.86700, 0.78300, 0.83100, 0.82100, 0.84500, 
+  0.87300, 0.87000, 0.86100, 0.80300, 0.78700, 0.87700, 0.83100, 0.79200, 0.84500, 0.78600,
+};
 
 struct TPoint
 {
@@ -67,7 +76,7 @@ bool compX(const int a, const int b)
 
 int n, N;
 
-double calc(int start)
+double calc_stupid(int start)
 {
   int current = start, next;
   int C = P.size();
@@ -103,7 +112,7 @@ double calc(int start)
 }
 
 int cnt;
-double fastCalc(int start)
+double calc_stl(int start)
 {
   int current = start;
   int C = P.size();
@@ -118,6 +127,10 @@ double fastCalc(int start)
 
   V.sort(compX);
 
+  /*for(list<int>::iterator cur = V.begin(); (cur != V.end()); ++cur)
+    cerr << *cur <<  " ";
+  cerr << endl;*/
+
   list<int>::iterator cur, next;
   for(cur = V.begin(); (cur != V.end()) && !(*cur == current); ++cur);
   //V.erase(cur); // To Change
@@ -128,9 +141,9 @@ double fastCalc(int start)
   {
     next = V.begin();
     nextDist = 1e15;
+    //cerr << *cur << " ";
     for(list<int>::iterator it = cur;; --it)
     {
-      
       if (it == cur) 
       {
         if (it == V.begin())
@@ -176,6 +189,74 @@ double fastCalc(int start)
   return tourLength;
 }
 
+int nx[15000], pr[15000], index[15000];
+bool visited[15000];
+double calc(int start)
+{
+  int current = start;
+  int C = P.size();
+  
+  memset(visited, 0, sizeof(bool)*(C+1));
+  visited[current] = 1;
+
+  for(int i=1; i<=C; i++)
+    index[i] = i-1;
+  sort(index + 1, index + C + 1, compX);
+
+  for(int i=1; i<=C; i++)
+  {
+    //cerr << index[i] << " ";
+    pr[i] = i-1;
+    nx[i] = i+1;
+  }
+  pr[0] = nx[C] = 0;
+
+  int cur, next;
+  for(cur = 1; (cur) && !(index[cur] == current); cur = nx[cur]);
+
+  double tourLength = 0.0;
+  double nextDist, tempDist;
+  for(int k=0; k<C-1; k++)
+  {
+    next = 1;
+    nextDist = 1e15;
+    //cerr << current << " ";
+    for(int it = pr[cur] ; it ; it = pr[it])
+    {
+
+      tempDist = dist(P[current], P[index[it]]);
+      if (nextDist < fabs(P[current].x - P[index[it]].x))
+        break;
+
+      if (tempDist - nextDist < -1e-7 || (fabs(tempDist - nextDist) < 1e-7 && index[next] > index[it]))
+      {
+        nextDist = tempDist;
+        next = it;
+      }
+
+    }
+    for(int it = nx[cur]; it; it = nx[it])
+    {
+      tempDist = dist(P[current], P[index[it]]);
+      if (nextDist < fabs(P[index[it]].x - P[current].x))
+        break;
+        
+      if (tempDist - nextDist < -1e-7 || (fabs(tempDist - nextDist) < 1e-7 && index[next] > index[it]))
+      {
+        nextDist = tempDist;
+        next = it;
+      }
+    }
+    pr[nx[cur]] = pr[cur];
+    nx[pr[cur]] = nx[cur];
+    tourLength += nextDist;
+    cur = next;
+    current = index[cur];
+  }
+  tourLength += dist(P[index[cur]], P[start]);
+  return tourLength;
+}
+
 void isotropyGen()
 {
   for(int i=P.size(); i<n+N; i++)
@@ -199,70 +280,117 @@ void webGen(double coef)
   isotropyGen();
 }
 
-double checkpoints[] = 
+
+void rombGen(double coef, double wide = 2.0)
 {
-  0.81600, 0.87300, 0.83500, 0.80300, 0.81400, 0.86700, 0.78300, 0.83100, 0.82100, 0.84500, 
-  0.87300, 0.87000, 0.86100, 0.80300, 0.78700, 0.87700, 0.83100, 0.79200, 0.84500, 0.78600,
-};
+  P.resize(n);
+  int sqrtN = sqrt(N*coef + 0.0);
+  int k = (1000000000 / sqrtN) / wide;
+  for(int i=0; i<sqrtN; i++)
+  {
+    for(int j=0; j<sqrtN; j++)
+    {
+      int x, y;
+      x = j*k*wide + (i%2)*k*wide / 2.0;
+      y = i*k*wide;
+      P.push_back(TPoint(x, y));
+    }
+  }
+  isotropyGen();
+}
+
+vector<TPoint> best_distribution;
+double best_answer = 0.0;
+inline void relax_solution(double coef = 0.0)
+{
+  double current_answer = calc(0);
+  if (current_answer > best_answer)
+  {
+    cerr << coef << endl;
+    cerr << current_answer / 1000000000 << endl;
+    best_distribution = P;
+    best_answer = current_answer;
+  }
+}
 
 void coefCheck()
 {
-  vector<TPoint> Best;
-  double bAns = 0.0, Ans;
   for(int i=0; i<20; i++)
   {
     webGen(checkpoints[i]);
-    Ans = fastCalc(0);
-    //Ans = calc(0);
-    if (Ans > bAns)
-    {
-      Best = P;
-      bAns = Ans;
-    }
+    relax_solution();
   }
-  P = Best;
 }
 
-void bruteforce()
+void bruteforce(int type = 0)
 {
-  vector<TPoint> Best;
-  double bAns = 0.0, Ans, bestp;
-  for(double i = 0.001; i < 0.999; i+=0.001)
+  if (type == 0)
+  for(double i = 0.01; i < 0.999; i+=0.01)
   {
+    cerr << i << endl;
     webGen(i);
-    Ans = fastCalc(0);
-    if (Ans > bAns)
+    relax_solution();
+  }
+  if (type == 1)
+  for(double wide = 1.0; wide <= 1.3; wide += 0.001)
+  {
+    //cerr << wide << endl;
+    for(double i = 0.1; i < 0.999; i+=0.001)
     {
       //cerr << i << endl;
-      bestp = i;
-      Best = P;
-      bAns = Ans;
+      for(int k=0; k<10; k++)
+      {
+        rombGen(i, wide);
+        relax_solution(wide);
+      }
     }
   }
   /*FILE *fout = fopen("coef.txt", "a+");
   fprintf(fout, "%.5lf, ", bestp);
   fclose(fout);*/
-  P = Best;
 }
 
+void generate_points()
+{
+  //srand(time(NULL));
+  bruteforce(1);
+  
+  /*
+  if (n+N < 3000)
+    bruteforce();
+  else
+    coefCheck();
+  */
 
-class AntiTravelingSalesperson {
+}
+
+void test_greedy()
+{
+  double t1 = clock();
+  double ans1 = calc(0);
+  double t2 = clock();
+  //cerr << endl;
+  double ans2 = calc_stl(0);
+  double t3 = clock();
+  //cerr << endl;
+  fprintf(stderr, "Main: %lf\n", (t2 - t1) / 1000.0);
+  fprintf(stderr, "Test: %lf\n", (t3 - t2) / 1000.0);
+  assert(fabs(ans1 - ans2) < 1e9);
+}
+
+class AntiTravelingSalesperson 
+{
 public:
 	vector<int> placeLocations(int N, vector<int> X, vector<int> Y) 
   {
-    //srand(time(NULL));
     n = X.size();
     ::N = N;
 
     for(int i=0; i<n; i++)
       P.push_back(TPoint(X[i], Y[i]));
 
-    //isotropyGen();
-    //webGen(1.2);
-    if (n+N < 1000)
-      bruteforce();
-    else
-      coefCheck();
+    generate_points();
+    P = best_distribution;
 
     vector<int> answer;
     for(int i=0; i<N; i++)
@@ -271,27 +399,14 @@ public:
       answer.push_back(P[n+i].y);
     }
 
-    /*double t1 = clock();
-    double ans1 = calc(0);
-    double t2 = clock();
-    cerr << endl;
-    double ans2 = fastCalc(0);
-    double t3 = clock();
-    cerr << cnt << endl;
-    fprintf(stderr, "%lf\n", (t2 - t1) / 1000.0);
-    fprintf(stderr, "%lf\n", (t3 - t2) / 1000.0);
-    cerr << ans1 << endl;
-    cerr << ans2 << endl;
-    assert(ans1 == ans2);*/
-    //cerr << clock() << endl;
+    fprintf(stderr, "Execution time: %lf\n", clock() / 1000.0);
+
     return answer;
 	}
-
 };
 
 int main()
 {
-
   int N;
   scanf("%d", &N);
 
