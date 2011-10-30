@@ -322,7 +322,7 @@ void coefCheck()
   }
 }
 
-void bruteforce(int type = 0)
+void bruteforce(int type = 0, int iter = 1)
 {
   if (type == 0)
   for(double i = 0.01; i < 0.999; i+=0.01)
@@ -332,16 +332,16 @@ void bruteforce(int type = 0)
     relax_solution();
   }
   if (type == 1)
-  for(double wide = 1.0; wide <= 1.3; wide += 0.001)
+  for(double wide = 1.0; wide <= 1.0; wide += 0.001)
   {
     //cerr << wide << endl;
-    for(double i = 0.1; i < 0.999; i+=0.001)
+    for(double i = 0.1; i < 0.99; i+=0.01)
     {
       //cerr << i << endl;
-      for(int k=0; k<10; k++)
+      for(int k=0; k<iter; k++)
       {
         rombGen(i, wide);
-        relax_solution(wide);
+        relax_solution(i);
       }
     }
   }
@@ -350,10 +350,20 @@ void bruteforce(int type = 0)
   fclose(fout);*/
 }
 
+void genlines(double alpha)
+{
+  P.resize(n);
+  for(int i=0; i<N; i++)
+  {
+    
+  }
+}
+
 void generate_points()
 {
   //srand(time(NULL));
-  bruteforce(1);
+  //bruteforce(1, 10 - (n+N)/2000);
+  genlines(double alpha = 0.232);
   
   /*
   if (n+N < 3000)
