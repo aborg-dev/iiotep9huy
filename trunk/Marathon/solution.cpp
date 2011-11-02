@@ -353,8 +353,11 @@ void bruteforce(int type = 0, int iter = 1)
 void genlines(double alpha)
 {
   P.resize(n);
+  TPoint current(randPoint());
+  double dx = cos(alpha), dy = sin(alpha);
   for(int i=0; i<N; i++)
   {
+    //MAXX, MAXY
     
   }
 }
