@@ -1,3 +1,4 @@
+
 #include <list>
 #include <vector>
 #include <cassert>
@@ -72,14 +73,14 @@ class binomial_heap
   void merge(binomial_heap * H)
   {
     int maxrank = 0;
-    
+
     for(plist it = L.begin(); it != L.end(); ++it)
       maxrank = std::max(maxrank, (*it)->rank);
 
     for(plist it = H->L.begin(); it != H->L.end(); ++it)
       maxrank = std::max(maxrank, (*it)->rank);
 
-    std::vector<ptree> D1(maxrank + 1), D2(maxrank + 1);
+    std::vector<ptree> D1(maxrank + 2), D2(maxrank + 2);
     for(plist it = L.begin(); it != L.end(); ++it)
       D1[(*it)->rank] = *it;
 
@@ -87,9 +88,9 @@ class binomial_heap
       D2[(*it)->rank] = *it;
 
     L.clear();
-    
+
     ptree carry = 0;
-    for(int i=0; i<maxrank + 1; ++i)
+    for(int i=0; i <= maxrank + 1; ++i)
     {
       if (carry && D1[i] && D2[i])
       {
@@ -101,7 +102,7 @@ class binomial_heap
         carry = D1[i]->merge(carry);
       if (D2[i])
         carry = D2[i]->merge(carry);
-      
+
       if (carry && (carry->rank == i))
       {
         L.push_back(carry);
@@ -138,16 +139,16 @@ class binomial_heap
 
 };
 
-int main() 
-{ 
+int main()
+{
   binomial_heap<int, int> H;
-  H.insert(1, 3);
+  //H.insert(1, 3);
   //H.insert(5, 2);
-  //H.insert(9, 8);
+  H.insert(9, 8);
   //H.insert(2, 2);
-  //H.insert(11, 7);
+  H.insert(11, 7);
   binomial_tree<int, int> * Pnt;
   Pnt = H.findMin();
   printf("%d %d\n", Pnt->key, Pnt->data);
-  return 0; 
+  return 0;
 }

@@ -332,7 +332,7 @@ void bruteforce(int type = 0, int iter = 1)
     relax_solution();
   }
   if (type == 1)
-  for(double wide = 1.0; wide <= 1.0; wide += 0.001)
+  for(double wide = 1.0; wide <= 1.0; wide += 0.01)
   {
     //cerr << wide << endl;
     for(double i = 0.1; i < 0.99; i+=0.01)
@@ -353,20 +353,45 @@ void bruteforce(int type = 0, int iter = 1)
 void genlines(double alpha)
 {
   P.resize(n);
-  TPoint current(randPoint());
+  TPoint current(randPoint(1));
   double dx = cos(alpha), dy = sin(alpha);
   for(int i=0; i<N; i++)
   {
     //MAXX, MAXY
-    
+    int X = MAXX - current.x;
+    int Y = MAXY - current.y;
+    if (X / dx > Y / dy)
+    {
+      X += (Y / dy) * dx;
+      Y = 0;
+    }
+    else
+    {
+      Y += (X / dx) * dy;
+      X = 0;
+    }
+    int X1 = MAXX - X;
+    int Y1 = MAXY - Y;
+    if (X1 / dx > Y1 / dy)
+    {
+      current.x = X + (Y1 / dy) * dx / 2.0;
+      current.y = Y + Y1 / 2.0;
+    }
+    else
+    {
+      current.x = X + X1 / 2.0;
+      current.y = Y + (X1 / dx) * dy / 2.0;
+    }
+    P.push_back(current);
+    cerr << current.x << " " << current.y << endl;
   }
 }
 
 void generate_points()
 {
   //srand(time(NULL));
-  //bruteforce(1, 10 - (n+N)/2000);
-  genlines(double alpha = 0.232);
+  bruteforce(1, 10 - (n+N)/2000);
+  //genlines(0.232);
   
   /*
   if (n+N < 3000)
