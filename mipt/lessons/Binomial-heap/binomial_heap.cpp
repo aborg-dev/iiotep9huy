@@ -1,74 +1,92 @@
-
+#include <iostream>
 #include <list>
 #include <vector>
 #include <cassert>
 #include <cstdio>
 
+#define DB(x) cerr << endl << #x << " : " << x << endl;
 
-template<typename Data, typename Key>
+template<typename Key>
 class binomial_tree
 {
 
+  private:
+
+  int size_;
+
   public:
-  typedef binomial_tree<Data, Key> tree;
+  typedef binomial_tree<Key> tree;
   typedef tree * ptree;
 
   Key key;
-  Data data;
   int rank;
   std::list<ptree> Child;
 
   binomial_tree() {}
-  binomial_tree(Data d, Key k)
+  binomial_tree(Key k)
   {
-    data = d;
     key = k;
     rank = 0;
+    size_ = 1;
   }
 
-  std::list<ptree> split()
+  int size()
   {
-    typename std::list<ptree> T = this->Child;
-    delete this;
+    return size_;
+  }
+
+  static std::list<ptree> split(ptree target)
+  {
+    typename std::list<ptree> T = target->Child;
+    delete target;
     return T;
   }
 
-  ptree merge(ptree B)
+  static ptree merge(ptree A, ptree B)
   {
-    if (!B)
-      return this;
+    if (!A || !B)
+      return A ? A : B;
 
-    assert(rank == B->rank);
+    assert(A->rank == B->rank);
 
-    if (key < B->key)
-      std::swap(*this, *B);
+    if (A->key > B->key)
+      std::swap(A, B);
 
-    ptree T = new tree(B->data, B->key);
+    ptree T = new tree(A->data, A->key);
     T->rank = rank + 1;
     T->Child.push_back(B);
+    T->Child.splice(T->Child.begin(), A, );
 
     for(typename std::list<ptree>::iterator it = Child.begin(); it != Child.end(); ++it)
       T->Child.push_back(*it);
 
-    delete this;
+    T->size_ = A->size_ + B->size_;
+
+    delete A;
     delete B;
     return T;
   }
 
 };
-
+/*
 template<typename Data, typename Key>
 class binomial_heap
 {
   private:
 
-  typename std::list< binomial_tree<Data, Key> * > L;
+  typename std::list< binomial_tree<Key> * > L;
+  int size_;
 
   public:
 
-  typedef binomial_tree<Data, Key> tree;
-  typedef binomial_tree<Data, Key> * ptree;
+  typedef binomial_tree<Key> tree;
+  typedef binomial_tree<Key> * ptree;
   typedef typename std::list<ptree>::iterator plist;
+
+  int size()
+  {
+    return size_;
+  }
 
   void merge(binomial_heap * H)
   {
@@ -88,6 +106,7 @@ class binomial_heap
       D2[(*it)->rank] = *it;
 
     L.clear();
+    Size = 0;
 
     ptree carry = 0;
     for(int i=0; i <= maxrank + 1; ++i)
@@ -95,6 +114,7 @@ class binomial_heap
       if (carry && D1[i] && D2[i])
       {
         L.push_back(carry);
+        size_ += carry->size;
         carry = 0;
       }
 
@@ -106,49 +126,71 @@ class binomial_heap
       if (carry && (carry->rank == i))
       {
         L.push_back(carry);
+        Size += carry->Size;
         carry = 0;
       }
     }
     delete H;
   }
 
-  void insert(Data d, Key k)
+  void insert(Key k)
   {
-    binomial_heap<Data, Key> * H = new binomial_heap<Data, Key>;
+    binomial_heap<Key> * H = new binomial_heap<Data, Key>;
     H->L.push_back(new tree(d, k));
     this->merge(H);
   }
 
-  ptree findMin()
+  plist findMinIter()
   {
-    ptree T;
+    plist T = L.end();
     for(plist it = L.begin(); it != L.end(); ++it)
-      if (!T || (T->key > (*it)->key))
-        T = *it;
+      if ((T == L.end()) || ((*T)->key > (*it)->key))
+        T = it;
     return T;
   }
 
+  ptree findMin()
+  {
+    plist it = findMinIter();
+    return *it;
+  }
+
+
   void popMin()
   {
-    ptree pMin = findMin();
+    plist pMin = findMinIter();
     binomial_heap<Data, Key> * H = new binomial_heap<Data, Key>;
-    H->L = pMin->split();
-    L->erase(pMin);
+    H->L = tree::split(*pMin);
+    L.erase(pMin);
     this->merge(H);
   }
 
-};
+};*/
 
 int main()
 {
+  binomial_tree<int> * Pnt;
+  binomial_tree<int>::split(Pnt);
+  /*freopen("input.txt", "r", stdin);
   binomial_heap<int, int> H;
-  //H.insert(1, 3);
-  //H.insert(5, 2);
-  H.insert(9, 8);
-  //H.insert(2, 2);
-  H.insert(11, 7);
   binomial_tree<int, int> * Pnt;
-  Pnt = H.findMin();
-  printf("%d %d\n", Pnt->key, Pnt->data);
+  int n;
+  scanf("%d", &n);
+  for(int i=0; i<n; i++)
+  {
+    int prior;
+    scanf("%d", &prior);
+    H.insert(0, prior);
+    //DB(H.size());
+  }
+  for(int i=0; i<n; i++)
+  {
+    if (i) printf(" ");
+    Pnt = H.findMin();
+    printf("%d", Pnt->key);
+    H.popMin();
+    //DB(H.size());
+  }
+  printf("\n");*/
   return 0;
 }
