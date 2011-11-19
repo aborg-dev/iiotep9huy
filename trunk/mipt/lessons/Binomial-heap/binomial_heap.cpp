@@ -12,21 +12,20 @@ class binomial_tree
 
   private:
 
-  int size_;
+  int size_, rank_;
 
   public:
   typedef binomial_tree<Key> tree;
   typedef tree * ptree;
 
   Key key;
-  int rank;
   std::list<ptree> Child;
 
   binomial_tree() {}
   binomial_tree(Key k)
   {
     key = k;
-    rank = 0;
+    rank_ = 0;
     size_ = 1;
   }
 
@@ -34,11 +33,19 @@ class binomial_tree
   {
     return size_;
   }
+  int rank()
+  {
+    return rank_;
+  }
 
   static std::list<ptree> split(ptree target)
   {
-    typename std::list<ptree> T = target->Child;
-    delete target;
+    typename std::list<ptree> T;
+    if (target)
+    {
+      T = target->Child;
+      delete target;
+    }
     return T;
   }
 
@@ -47,17 +54,17 @@ class binomial_tree
     if (!A || !B)
       return A ? A : B;
 
-    assert(A->rank == B->rank);
+    assert(A->rank() == B->rank());
 
     if (A->key > B->key)
       std::swap(A, B);
 
-    ptree T = new tree(A->data, A->key);
-    T->rank = rank + 1;
+    ptree T = new tree(A->key);
+    T->rank_ = A->rank_ + 1;
     T->Child.push_back(B);
-    T->Child.splice(T->Child.begin(), A, );
+    //T->Child.splice(T->Child.begin(), A, );
 
-    for(typename std::list<ptree>::iterator it = Child.begin(); it != Child.end(); ++it)
+    for(typename std::list<ptree>::iterator it = A->Child.begin(); it != A->Child.end(); ++it)
       T->Child.push_back(*it);
 
     T->size_ = A->size_ + B->size_;
@@ -68,8 +75,8 @@ class binomial_tree
   }
 
 };
-/*
-template<typename Data, typename Key>
+
+template<typename Key>
 class binomial_heap
 {
   private:
@@ -88,56 +95,70 @@ class binomial_heap
     return size_;
   }
 
-  void merge(binomial_heap * H)
+  static binomial_heap * merge(binomial_heap * A, binomial_heap * B)
   {
     int maxrank = 0;
 
-    for(plist it = L.begin(); it != L.end(); ++it)
-      maxrank = std::max(maxrank, (*it)->rank);
+    for(plist it = A->L.begin(); it != A->L.end(); ++it)
+      maxrank = std::max(maxrank, (*it)->rank());
 
-    for(plist it = H->L.begin(); it != H->L.end(); ++it)
-      maxrank = std::max(maxrank, (*it)->rank);
+    for(plist it = B->L.begin(); it != B->L.end(); ++it)
+      maxrank = std::max(maxrank, (*it)->rank());
 
     std::vector<ptree> D1(maxrank + 2), D2(maxrank + 2);
-    for(plist it = L.begin(); it != L.end(); ++it)
-      D1[(*it)->rank] = *it;
+    for(plist it = A->L.begin(); it != A->L.end(); ++it)
+      D1[(*it)->rank()] = *it;
 
-    for(plist it = H->L.begin(); it != H->L.end(); ++it)
-      D2[(*it)->rank] = *it;
+    for(plist it = B->L.begin(); it != B->L.end(); ++it)
+      D2[(*it)->rank()] = *it;
 
-    L.clear();
-    Size = 0;
+    binomial_heap * T = new binomial_heap;
+    T->size_ = 0;
+    T->L.clear();
 
     ptree carry = 0;
     for(int i=0; i <= maxrank + 1; ++i)
     {
       if (carry && D1[i] && D2[i])
       {
-        L.push_back(carry);
-        size_ += carry->size;
+        T->L.push_back(carry);
+        T->size_ += carry->size();
         carry = 0;
       }
 
       if (D1[i])
-        carry = D1[i]->merge(carry);
+        carry = binomial_tree<Key>::merge(D1[i], carry);
       if (D2[i])
-        carry = D2[i]->merge(carry);
+        carry = binomial_tree<Key>::merge(D2[i], carry);
 
-      if (carry && (carry->rank == i))
+      if (carry && (carry->rank() == i))
       {
-        L.push_back(carry);
-        Size += carry->Size;
+        T->L.push_back(carry);
+        T->size_ += carry->size();
         carry = 0;
       }
     }
-    delete H;
+    delete A;
+    delete B;
+    return T;
   }
+  
+  /*static binomial_heap * insert(binomial_heap * A, Key k)
+  {
+    binomial_heap<Key> * B = new binomial_heap<Key>, *T;
+    A->L.push_back(new tree(k));
+    T = merge(A, B);
+    delete A;
+    delete B;
+    return T;
+  }*/
 
   void insert(Key k)
   {
-    binomial_heap<Key> * H = new binomial_heap<Data, Key>;
-    H->L.push_back(new tree(d, k));
-    this->merge(H);
+    binomial_heap<Key> * T = new binomial_heap<Key>;
+    T->L.push_back(new tree(k));
+    //T = merge(this, T);   
+    //this = T;
   }
 
   plist findMinIter()
@@ -159,28 +180,32 @@ class binomial_heap
   void popMin()
   {
     plist pMin = findMinIter();
-    binomial_heap<Data, Key> * H = new binomial_heap<Data, Key>;
+    binomial_heap<Key> * H = new binomial_heap<Key>;
     H->L = tree::split(*pMin);
     L.erase(pMin);
-    this->merge(H);
+    //this = merge(this, H);
   }
 
-};*/
+};
 
 int main()
 {
+  /*binomial_tree<int> *A, *B, *C;
+  A = new binomial_tree<int>(3);
+  B = new binomial_tree<int>(7);
+  C = binomial_tree<int>::merge(A, B);
+  std::cerr << C->rank() << std::endl;*/
+  //std::list<binomial_tree<int> *> L = binomial_tree<int>::split(Pnt);
+  freopen("input.txt", "r", stdin);
+  binomial_heap<int> H;
   binomial_tree<int> * Pnt;
-  binomial_tree<int>::split(Pnt);
-  /*freopen("input.txt", "r", stdin);
-  binomial_heap<int, int> H;
-  binomial_tree<int, int> * Pnt;
   int n;
   scanf("%d", &n);
   for(int i=0; i<n; i++)
   {
     int prior;
     scanf("%d", &prior);
-    H.insert(0, prior);
+    H.insert(prior);
     //DB(H.size());
   }
   for(int i=0; i<n; i++)
@@ -191,6 +216,6 @@ int main()
     H.popMin();
     //DB(H.size());
   }
-  printf("\n");*/
+  printf("\n");
   return 0;
 }
