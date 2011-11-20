@@ -12,6 +12,8 @@ if [ -e diff.txt ]; then
   rm diff.txt
 fi
 
+g++ solution.cpp -O2 -o solution
+
 for((i=10; i<10000; i+=500))
 {
   echo Calculating $i
