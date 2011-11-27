@@ -9,43 +9,40 @@
 #define DB(x) std::cerr << std::endl << #x << " : " << x << std::endl;
 
 template<typename Key>
-class binomial_tree
+class BinomialTree
 {
 
-  private:
-
-  int size_, rank_;
-
   public:
-  typedef binomial_tree<Key> tree;
+  typedef BinomialTree<Key> tree;
   typedef std::shared_ptr<tree> ptree;
 
-  Key key;
-  std::list<ptree> Child;
-
-  binomial_tree() {}
-  binomial_tree(Key k)
+  BinomialTree() {}
+  explicit BinomialTree(const Key& k)
   {
-    key = k;
+    key_ = k;
     rank_ = 0;
     size_ = 1;
   }
 
-  int size()
+  int size() const
   {
     return size_;
   }
-  int rank()
+  int rank() const
   {
     return rank_;
+  }
+  int key() const
+  {
+    return key_;
   }
 
   static std::list<ptree> split(ptree target)
   {
-    typename std::list<ptree> T;
+    std::list<ptree> T;
     if (target)
     {
-      T = target->Child;
+      T = target->child_;
       target = 0;
     }
     return T;
@@ -53,114 +50,110 @@ class binomial_tree
 
   static ptree merge(ptree A, ptree B)
   {
-    if (!A || !B)
-      return A ? A : B;
+    if (!A)
+      return B;
+    if (!B)
+      return A;
 
     assert(A->rank() == B->rank());
 
-    if (A->key > B->key)
+    if (A->key() > B->key())
       std::swap(A, B);
 
-    ptree T(new tree(A->key));
+    ptree T(new tree(A->key()));
     T->rank_ = A->rank_ + 1;
 
-    T->Child.push_back(B);
-    T->Child.splice(T->Child.begin(), A->Child);
+    T->child_.push_back(B);
+    T->child_.splice(T->child_.begin(), A->child_);
 
     T->size_ = A->size_ + B->size_;
 
-    A = 0;
-    B = 0;
+    A = B = 0;
     return T;
   }
+
+  private:
+
+  Key key_;
+  int size_, rank_;
+  std::list<ptree> child_;
 
 };
 
 template<typename Key>
-class binomial_heap
+class BinomialHeap
 {
-  private:
-
-  typename std::list< std::shared_ptr<binomial_tree<Key>> > L;
-  int size_;
 
   public:
 
-  typedef binomial_tree<Key> tree;
+  typedef BinomialTree<Key> tree;
   typedef std::shared_ptr<tree> ptree;
-  typedef std::shared_ptr<binomial_heap<Key>> pheap;
+  typedef std::shared_ptr<BinomialHeap<Key>> pheap;
   typedef typename std::list<ptree>::iterator plist;
 
-  int size()
+  int size() const
   {
     return size_;
   }
 
-  /*static bool rank_comp(ptree a, ptree b)
+  void addToRootList(ptree& item)
   {
-    return (a->rank() < b->rank());
-  }*/
+    if (item)
+    {
+      this->root_list_.push_back(item);
+      this->size_ += item->size();
+      item = 0;
+    }
+  }
 
   void merge(pheap H)
   {
     int maxrank = 0;
     
-    for(auto it : H->L)
+    for(auto it : H->root_list_)
       maxrank = std::max(maxrank, it->rank());
 
-    for(auto it : L)
+    for(auto it : root_list_)
       maxrank = std::max(maxrank, it->rank());
-
-    /*if (!H->L.empty())
-      maxrank = std::max(maxrank, (*max_element(H->L.begin(), H->L.end(), rank_comp))->rank());
-
-    if (!L.empty())
-      maxrank = std::max(maxrank, (*max_element(L.begin(), L.end(), rank_comp))->rank());*/
     
-    std::vector<ptree> D1(maxrank + 2), D2(maxrank + 2);
+    std::vector<ptree> add_items1(maxrank + 2), add_items2(maxrank + 2);
 
-    for(auto it : H->L)
-      D1[it->rank()] = it;
+    for(auto it : H->root_list_)
+      add_items1[it->rank()] = it;
 
-    for(auto it : L)
-      D2[it->rank()] = it;
+    for(auto it : root_list_)
+      add_items2[it->rank()] = it;
       
     this->size_ = 0;
-    this->L.clear();
+    this->root_list_.clear();
 
     ptree carry = 0;
     for(int i=0; i <= maxrank + 1; ++i)
     {
-      if (carry && D1[i] && D2[i])
-      {
-        this->L.push_back(carry);
-        this->size_ += carry->size();
-        carry = 0;
-      }
+      if (carry && add_items1[i] && add_items2[i])
+        addToRootList(carry);
 
-      carry = tree::merge(D1[i], carry);
-      carry = tree::merge(D2[i], carry);
+      carry = tree::merge(add_items1[i], carry);
+      carry = tree::merge(add_items2[i], carry);
 
       if (carry && (carry->rank() == i))
-      {
-        this->L.push_back(carry);
-        this->size_ += carry->size();
-        carry = 0;
-      }
+        addToRootList(carry);
     }
     H = 0;
   }
   
-  void insert(Key k)
+  void insert(const Key &k)
   {
-    pheap T(new binomial_heap<Key>);
-    T->L.push_back(ptree(new tree(k)));
+    pheap T(new BinomialHeap<Key>);
+    T->root_list_.push_back(ptree(new tree(k)));
     this->merge(T);
   }
 
   plist findMinIter()
   {
-    return min_element(L.begin(), L.end(), [](ptree a, ptree b) { return (a->key < b->key); });
+    return min_element(root_list_.begin(), root_list_.end(), [](ptree a, ptree b) {
+                                                              return (a->key() < b->key()); 
+    });
   }
 
   ptree findMin()
@@ -171,19 +164,24 @@ class binomial_heap
   void popMin()
   {
     plist pMin = findMinIter();
-    pheap H (new binomial_heap<Key>);
-    H->L = tree::split(*pMin);
-    L.erase(pMin);
+    pheap H (new BinomialHeap<Key>);
+    H->root_list_ = tree::split(*pMin);
+    root_list_.erase(pMin);
     this->merge(H);
   }
+
+  private:
+
+  std::list<ptree> root_list_;
+  int size_;
 
 };
 
 int main()
 {
   freopen("input.txt", "r", stdin);
-  binomial_heap<int> H;
-  std::shared_ptr<binomial_tree<int>> Pnt;
+  BinomialHeap<int> H;
+  std::shared_ptr<BinomialTree<int>> Pnt;
   int n;
   scanf("%d", &n);
   for(int i=0; i<n; i++)
@@ -196,7 +194,7 @@ int main()
   {
     if (i) printf(" ");
     Pnt = H.findMin();
-    printf("%d", Pnt->key);
+    printf("%d", Pnt->key());
     H.popMin();
   }
   printf("\n");
