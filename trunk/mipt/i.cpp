@@ -84,6 +84,13 @@ void multiply(vector<int>& a, vector<int>& b, vector<int>& c)
     c[i] = int(fa[i].real() + 0.5);
 }
 
+void print(vector<int> v)
+{
+  for(int i = 0; i < v.size(); i++)
+    printf("%d ", v[i]);
+  printf("\n");
+}
+
 int main()
 {
 	freopen("i.in","r", stdin); freopen("i.out","w", stdout);
@@ -113,13 +120,13 @@ int main()
   }
   vector<int> result;
   multiply(field, pattern, result);
+  print(field);
+  print(pattern);
+  print(result);
   int best_ans = -100000;
   int n = result.size();
-  REP(i, n)
-    cout << result[i] << " ";
-  cout << endl;
   for(int i = 0; i < n / 2; i++)
-    best_ans = max(best_ans, result[i] + result[n - i - 1]);
+    best_ans = max(best_ans, result[i] + result[i + n/2]);
   printf("%d\n", best_ans);
 	return 0;
 }
