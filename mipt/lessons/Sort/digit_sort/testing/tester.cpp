@@ -5,48 +5,47 @@
 #include <time.h>
 #include <cassert>
 
-#include "struct+extractor.cpp"
-#include "digit_sort.cpp"
+#include "extractors.hpp"
+#include "digit_sort.hpp"
 
 using namespace std;
 
-template <class T>
-void test_stl_sort(T l, T r) {
+template <typename T>
+void TestSTDSort(T begin, T end) {
   double t1 = clock();
-  sort(l, r);
+  sort(begin, end);
   double t2 = clock();
   printf("STL: %.lf\n", (t2 - t1) / 1000.0);
 }
 
-template <class T, class BlockExtractor>
-void test_digit_sort(T l, T r, BlockExtractor BE) {
+template <typename T, typename BlockExtractor>
+void TestDigitSort(T begin, T end, const BlockExtractor& BE) {
   double t1 = clock();
-  digit_sort(l, r, BE);
+  DigitSort(begin, end, BE);
   double t2 = clock();
   printf("Digit: %.lf\n", (t2 - t1) / 1000.0);
 }
 
-template <class T>
-void check(T l1, T r1, T l2, T r2) {
-  while (l1 != r1) {
-    assert(*l1 == *l2);
-    l1++;
-    l2++;
+template <typename T>
+void CheckSortResult(T begin1, T end1, T begin2, T end2) {
+  while (begin1 != end1) {
+    assert(*begin1 == *begin2);
+    begin1++;
+    begin2++;
   }
   printf("Match!\n");
 }
 
-template <class Type, class Generator, class BlockExtractor>
-void test(int n, Generator G, BlockExtractor BE) {
-  vector<Type> T(n), S1(n), S2(n);
+template <typename Element, typename Generator, typename BlockExtractor>
+void Test(int n, const Generator& G, const BlockExtractor& BE) {
+  vector<Element> T(n), S1(n), S2(n);
   generate(T.begin(), T.end(), G);
   copy(T.begin(), T.end(), S1.begin());
   copy(T.begin(), T.end(), S2.begin());
 
-  //test_stl_sort(S1.begin(), S1.end());
-  test_stl_sort(S1.begin(), S1.end());
-  test_digit_sort(S2.begin(), S2.end(), BE);
-  check(S1.begin(), S1.end(), S2.begin(), S2.end());
+  TestSTDSort(S1.begin(), S1.end());
+  TestDigitSort(S2.begin(), S2.end(), BE);
+  CheckSortResult(S1.begin(), S1.end(), S2.begin(), S2.end());
 
   T.clear(); S1.clear(); S2.clear();
 }
@@ -56,26 +55,26 @@ const int longlong_N = 10000000;
 const int string_N = 100000;
 const int pair_N = 10000000;
 
-void test_all() {
+void TestAll() {
   printf("n = %d, int:\n", int_N);
-  test <int>(int_N, gen_int, int_extractor());
+  Test<int>(int_N, RandomInteger<int>, IntegerExtractor<int>());
   printf("\n");
 
   printf("n = %d, long long:\n", longlong_N);
-  test <long long>(longlong_N, gen_long_long, long_long_extractor());
+  Test<long long>(longlong_N, RandomInteger<long long>, IntegerExtractor<long long>());
   printf("\n");
 
   printf("n = %d, string:\n", string_N);
-  test <string>(string_N, gen_string, string_extractor());
+  Test<string>(string_N, RandomString, StringExtractor());
   printf("\n");
 
   printf("n = %d, pair:\n", pair_N);
-  test < pair<int,int> >(pair_N, gen_pair, pair_extractor());
+  Test< pair<int,int> >(pair_N, RandomPair, PairExtractor());
   printf("\n");
 }
 
 int main() {
   srand(time(NULL));
-  test_all();
+  TestAll();
   return 0;
 }
