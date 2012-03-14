@@ -39,7 +39,7 @@ typedef struct
   int quote_filled;
 } State;
 
-void initState(State* state)
+void setDefaultState(State* state)
 {
   state->word_count = 0;
   state->in_quotes = 0;
@@ -57,7 +57,7 @@ enum RETURN_MESSAGE countWordsFromFile(FILE* input, int* word_count)
   if (input == NULL)
     return FILE_ERROR;
   State state;
-  initState(&state);
+  setDefaultState(&state);
   while(!feof(input))
   {
     char c = fgetc(input);
@@ -71,7 +71,9 @@ enum RETURN_MESSAGE countWordsFromFile(FILE* input, int* word_count)
     if (isalnum(c))
     {
       if (!state.in_word && (!state.quote_filled || !state.in_quotes))
+      {
         state.word_count++;
+      }
       state.quote_filled = 1;
       state.in_word = 1;
     }
@@ -104,6 +106,18 @@ void printWordsCountNoErrors(FILE* file)
   }
 }
 
+void printFilesWordCounts(char** file_name, size_t file_count)
+{
+  for(size_t i = 0; i < file_count; i++)
+  {
+    FILE* input = fopen(file_name[i], "r");
+    printf("File: %s\n", file_name[i]);
+    printWordsCountNoErrors(input);
+    fclose(input);
+  }
+}
+
+
 int main(int argc, char** argv)
 {
   if (argc < 2)
@@ -112,12 +126,7 @@ int main(int argc, char** argv)
   }
   else
   {
-    for(int i = 1; i < argc; i++)
-    {
-      FILE *input = fopen(argv[i], "r");
-      printf("File: %s\n", argv[i]);
-      printWordsCountNoErrors(input);
-    }
+    printFilesWordCounts(argv + 1, argc - 1);
   }
 	return 0;
 }
