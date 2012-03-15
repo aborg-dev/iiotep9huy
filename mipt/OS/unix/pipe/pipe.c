@@ -8,68 +8,103 @@
 
 int main(int argc, char** argv)
 {
-	if (argc != 2)
-	{
-		printf("Usage: \"command1 | command2\"\n");
-		return 0;
-	}
-	char* command[2];
-	int pipe_position = -1;
+  if (argc != 2)
+  {
+    printf("Usage: \"command1 | command2\"\n");
+    return 0;
+  }
+  int pipeCount = 0;
+  int commandCount = 0;
+  int length = strlen(argv[1]);
 
-	int length = strlen(argv[1]);
-	for(int j = 0; j < length; j++)
-	{
-		if (argv[1][j] == '|')
-		{
-			pipe_position = j;
-			break;
-		}
-	}
-	if (pipe_position == -1)
-	{
-		fprintf(stderr, "Pipe not found\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	command[0] = (char*) calloc(pipe_position, sizeof(char));
-	command[1] = (char*) calloc(length - pipe_position, sizeof(char));
-	strncat(command[0], argv[1], pipe_position);
-	strncat(command[1], argv[1] + pipe_position + 1, length - pipe_position);
+  for(int i = 0; i < length; i++)
+  {
+    if (argv[1][i] == '|')
+      pipeCount++;
+  }
+  commandCount = pipeCount + 1;
 
-	/*
-	printf("%s\n", command[0]);
-	printf("%s\n", command[1]);
-	*/
+  char* command[commandCount];
+  int currentCommand = 0;
+  int commandBegin = 0, commandEnd = 0;
 
-	int file_descriptor[2];
+  for(int i = 0; i <= length; i++)
+  {
+    if (i == length || argv[1][i] == '|')
+    {
+      commandEnd = i - 1;
+      command[currentCommand] = (char*) calloc(commandEnd - commandBegin + 2, sizeof(char*));
+      strncpy(command[currentCommand], argv[1] + commandBegin, commandEnd - commandBegin + 1);
+      commandBegin = i + 1;
+      currentCommand++;
+    }
+  }
 
-	if (pipe(file_descriptor) == -1)
-	{
-		fprintf(stderr, "Can\'t open pipe\n");
-		exit(EXIT_FAILURE);
-	}
+  for(int i = 0; i < commandCount; i++)
+  {
+    printf("%s\n", command[i]);
+  }
 
-	pid_t child_pid;
-	child_pid = fork();
+  int file_descriptor[pipeCount][2];
 
-	if (child_pid == -1)
-	{
-		fprintf(stderr, "Can\'t fork\n");
-		exit(EXIT_FAILURE);
-	}
+  for(int i = 0; i < pipeCount; i++)
+  {
+    if (pipe(file_descriptor[i]) == -1)
+    {
+      fprintf(stderr, "Can\'t open pipe\n");
+      break;
+    }
+  }
 
-	if (child_pid == 0) // Child
-	{
-		//printf("child executing\n");
-		close(STDIN_FILENO);
-		dup2(file_descriptor[0], STDIN_FILENO);
-		execl("/bin/bash", "bash", "-c", command[1], NULL);
-	}
-	else 								// Parent
-	{
-		//printf("parent executing\n");
-		close(STDOUT_FILENO);
-		dup2(file_descriptor[1], STDOUT_FILENO);
-		execl("/bin/bash", "bash", "-c", command[0], NULL);
-	}
+  for(int i = 0; i < commandCount; i++)
+  {
+    printf("Command number: %d\n", i);
+    /*if (i < pipeCount)
+    {
+      if (pipe(file_descriptor[i]) == -1)
+      {
+        fprintf(stderr, "Can\'t open pipe\n");
+        break;
+      }
+    }*/
+
+    pid_t child_pid;
+    child_pid = fork();
+
+    if (child_pid == -1)
+    {
+      fprintf(stderr, "Can\'t fork\n");
+      break;
+    }
+
+    if (child_pid == 0) // Child
+    {
+      printf("Child executing:\n");
+      if (i != commandCount - 1)
+      {
+        close(STDOUT_FILENO);
+        dup2(file_descriptor[i][1], STDOUT_FILENO);
+      }
+      if (i != 0)
+      {
+        close(STDIN_FILENO);
+        dup2(file_descriptor[i - 1][0], STDIN_FILENO);
+      }
+      printf("AAA %d\n", i);
+      execl("/bin/bash", "bash", "-c", command[i], NULL);
+    }
+    else                // Parent
+    {
+      printf("Parent executing:\n");
+    }
+  }
+  printf("Now we are waiting\n");
+  wait(NULL);
+  for(int i = 0; i < commandCount; i++)
+  {
+    free(command[i]);
+  }
+  printf("Memory is free\n");
+  return 0;
 }
+
