@@ -6,6 +6,15 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
+void parseCommands()
+{
+  
+}
+
+void executeCommands()
+{
+}
+
 int main(int argc, char** argv)
 {
   if (argc != 2)
@@ -40,33 +49,18 @@ int main(int argc, char** argv)
     }
   }
 
+  int file_descriptor[2];
+  int previous_file_descriptor[2];
+  previous_file_descriptor[0] = STDIN_FILENO;
+  previous_file_descriptor[1] = STDOUT_FILENO;
+
   for(int i = 0; i < commandCount; i++)
   {
-    printf("%s\n", command[i]);
-  }
-
-  int file_descriptor[pipeCount][2];
-
-  for(int i = 0; i < pipeCount; i++)
-  {
-    if (pipe(file_descriptor[i]) == -1)
+    if (pipe(file_descriptor) == -1)
     {
       fprintf(stderr, "Can\'t open pipe\n");
       break;
     }
-  }
-
-  for(int i = 0; i < commandCount; i++)
-  {
-    printf("Command number: %d\n", i);
-    /*if (i < pipeCount)
-    {
-      if (pipe(file_descriptor[i]) == -1)
-      {
-        fprintf(stderr, "Can\'t open pipe\n");
-        break;
-      }
-    }*/
 
     pid_t child_pid;
     child_pid = fork();
@@ -79,32 +73,37 @@ int main(int argc, char** argv)
 
     if (child_pid == 0) // Child
     {
-      printf("Child executing:\n");
       if (i != commandCount - 1)
       {
-        close(STDOUT_FILENO);
-        dup2(file_descriptor[i][1], STDOUT_FILENO);
+        dup2(file_descriptor[1], STDOUT_FILENO);
       }
       if (i != 0)
       {
-        close(STDIN_FILENO);
-        dup2(file_descriptor[i - 1][0], STDIN_FILENO);
+        dup2(previous_file_descriptor[0], STDIN_FILENO);
+        close(previous_file_descriptor[1]);
       }
-      printf("AAA %d\n", i);
+
+      close(file_descriptor[0]);
       execl("/bin/bash", "bash", "-c", command[i], NULL);
+      wait(NULL);
     }
     else                // Parent
     {
-      printf("Parent executing:\n");
+      for(int j = 0; j < 2; j++)
+      {
+        if (i != 0)
+          close(previous_file_descriptor[j]);
+        previous_file_descriptor[j] = file_descriptor[j];
+      }
     }
   }
-  printf("Now we are waiting\n");
+  close(file_descriptor[0]);
+  close(file_descriptor[1]);
   wait(NULL);
   for(int i = 0; i < commandCount; i++)
   {
     free(command[i]);
   }
-  printf("Memory is free\n");
   return 0;
 }
 
