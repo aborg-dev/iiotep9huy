@@ -11,18 +11,12 @@
 #include <grp.h>
 #include <stdbool.h>
 
-#define MAX_DEPTH = 10
-
 const char DIR_SEPARATOR = '/';
 const char* DIR_SEPARATOR_STR = "/";
 
-int max_depth = 100;
-
 bool isValidFileName(char* name)
 {
-  if (name == NULL || name[0] == '.')
-    return false;
-  return true;
+  return (name != NULL && name[0] != '.');
 }
 
 void printFileMode(mode_t file_mode)
@@ -42,7 +36,7 @@ void printFileMode(mode_t file_mode)
   printf("%c", S_IXOTH & file_mode ? 'x' : '-');
 }
 
-void printFileStats(char* file_path, char* file_name, int detailed)
+void printFileStats(char* file_path, char* file_name, bool detailed)
 {
   if (detailed)
   {
@@ -82,16 +76,14 @@ bool isExistingPath(char* absolute_path)
   return true;
 }
 
-void ls(char* absolute_path, int depth, int detailed)
+void ls(char* absolute_path, int depth, bool detailed)
 {
-  if (depth > max_depth)
-    return;
   if (!isExistingPath(absolute_path))
     return;
 
   printf("\n%s:\n", absolute_path);
   size_t path_length = strlen(absolute_path);
-  char*  file_path   = (char*) malloc(path_length + 1);
+  char*  file_path   = (char*) malloc(path_length + 2);
 
   strcpy(file_path, absolute_path);
   if (file_path[path_length - 1] != DIR_SEPARATOR)
@@ -100,33 +92,46 @@ void ls(char* absolute_path, int depth, int detailed)
     path_length++;
   }
   
-  for(int process_mode = 0; process_mode <= 1; process_mode++) // 0 - print, 1 - discover.
+  // Printing directory content
+  DIR*   dir_file    = opendir(absolute_path);
+  struct dirent* dir = readdir(dir_file);
+  while(dir)
   {
-    DIR*   dir_file    = opendir(absolute_path);
-    struct dirent* dir = readdir(dir_file);
-    while(dir)
+    if (isValidFileName(dir->d_name))
     {
-      if (isValidFileName(dir->d_name))
-      {
-        if (strlen(file_path) < path_length + strlen(dir->d_name))
-          file_path = (char*) realloc(file_path, path_length + strlen(dir->d_name) + 1);
-        file_path[path_length] = '\0';
-        strcat(file_path, dir->d_name);
+      if (strlen(file_path) < path_length + strlen(dir->d_name))
+        file_path = (char*) realloc(file_path, path_length + strlen(dir->d_name) + 1);
+      file_path[path_length] = '\0';
+      strcat(file_path, dir->d_name);
 
-        if (process_mode == 0)
-        {
-          printFileStats(file_path, dir->d_name, detailed);
-        }
-        else
-        {
-          ls(file_path, depth + 1, detailed);
-        }
-      }
-      dir = readdir(dir_file);
+      printFileStats(file_path, dir->d_name, detailed);
     }
-    closedir(dir_file);
-    free(dir);
+    dir = readdir(dir_file);
   }
+  closedir(dir_file);
+  free(dir);
+  // --------------------------
+
+  // Exploring child directories
+  dir_file    = opendir(absolute_path);
+  dir = readdir(dir_file);
+  while(dir)
+  {
+    if (isValidFileName(dir->d_name))
+    {
+      if (strlen(file_path) < path_length + strlen(dir->d_name))
+        file_path = (char*) realloc(file_path, path_length + strlen(dir->d_name) + 1);
+      file_path[path_length] = '\0';
+      strcat(file_path, dir->d_name);
+
+      ls(file_path, depth + 1, detailed);
+    }
+    dir = readdir(dir_file);
+  }
+  closedir(dir_file);
+  free(dir);
+  // --------------------------
+
   free(file_path);
 }
 
@@ -134,14 +139,14 @@ int main(int argc, char** argv)
 {
   if (argc < 2)
   {
-    ls(".", 0, 0);
+    ls(".", 0, false);
     printf("\n");
   }
   else
   {
     for(int i = 1; i < argc; i++)
     {
-      ls(argv[i], 0, 1);
+      ls(argv[i], 0, true);
     }
   }
   return 0;
