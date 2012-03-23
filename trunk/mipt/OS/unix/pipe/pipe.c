@@ -6,103 +6,127 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-void parseCommands()
+int countPipes(char* input)
 {
-  
-}
-
-void executeCommands()
-{
-}
-
-int main(int argc, char** argv)
-{
-  if (argc != 2)
-  {
-    printf("Usage: \"command1 | command2\"\n");
+  if (input == NULL)
     return 0;
-  }
   int pipeCount = 0;
-  int commandCount = 0;
-  int length = strlen(argv[1]);
-
-  for(int i = 0; i < length; i++)
-  {
-    if (argv[1][i] == '|')
+  while (*input != '\0') { if (*input == '|')
+    {
       pipeCount++;
+    }
+    input++;
   }
-  commandCount = pipeCount + 1;
+  return pipeCount;
+}
 
-  char* command[commandCount];
+void parseCommands(char* input, char*** commands, int* commandsCount)
+{
+  int length = strlen(input);
+  int pipeCount = countPipes(input);
+  *commandsCount = pipeCount + 1;
+
+  *commands = (char**) calloc(*commandsCount, sizeof(char*));
   int currentCommand = 0;
   int commandBegin = 0, commandEnd = 0;
 
   for(int i = 0; i <= length; i++)
   {
-    if (i == length || argv[1][i] == '|')
+    if (i == length || input[i] == '|')
     {
       commandEnd = i - 1;
-      command[currentCommand] = (char*) calloc(commandEnd - commandBegin + 2, sizeof(char*));
-      strncpy(command[currentCommand], argv[1] + commandBegin, commandEnd - commandBegin + 1);
+      (*commands)[currentCommand] = (char*) calloc(commandEnd - commandBegin + 2, sizeof(char));
+      strncpy((*commands)[currentCommand], input + commandBegin, commandEnd - commandBegin + 1);
       commandBegin = i + 1;
       currentCommand++;
     }
   }
+}
 
-  int file_descriptor[2];
-  int previous_file_descriptor[2];
-  previous_file_descriptor[0] = STDIN_FILENO;
-  previous_file_descriptor[1] = STDOUT_FILENO;
+void executeCommand(char* command, int input, int output, int obsoletePipe, int obsoletePipe1)
+{
+  pid_t childPID = fork();
 
-  for(int i = 0; i < commandCount; i++)
+  if (childPID == -1)
   {
-    if (pipe(file_descriptor) == -1)
+    fprintf(stderr, "Can\'t fork\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (childPID == 0)
+  {
+    close(obsoletePipe);
+    close(obsoletePipe1);
+    dup2(input, STDIN_FILENO);
+    dup2(output, STDOUT_FILENO);
+    execl("/bin/bash", "bash", "-c", command, NULL);
+  }
+}
+
+void executeCommandLine(char** commands, int commandsCount)
+{
+  int fileDescriptor[2];
+  int previousFileDescriptor[2];
+  previousFileDescriptor[0] = STDIN_FILENO;
+  previousFileDescriptor[1] = STDOUT_FILENO;
+
+  for(int i = 0; i < commandsCount; i++)
+  {
+    if (pipe(fileDescriptor) == -1)
     {
       fprintf(stderr, "Can\'t open pipe\n");
       break;
     }
-
-    pid_t child_pid;
-    child_pid = fork();
-
-    if (child_pid == -1)
+    if (i == commandsCount - 1)
     {
-      fprintf(stderr, "Can\'t fork\n");
-      break;
+      dup2(STDOUT_FILENO, fileDescriptor[1]);
     }
 
-    if (child_pid == 0) // Child
-    {
-      if (i != commandCount - 1)
-      {
-        dup2(file_descriptor[1], STDOUT_FILENO);
-      }
-      if (i != 0)
-      {
-        dup2(previous_file_descriptor[0], STDIN_FILENO);
-        close(previous_file_descriptor[1]);
-      }
+    executeCommand(commands[i], previousFileDescriptor[0], fileDescriptor[1], previousFileDescriptor[1], fileDescriptor[0]);
 
-      close(file_descriptor[0]);
-      execl("/bin/bash", "bash", "-c", command[i], NULL);
-      wait(NULL);
-    }
-    else                // Parent
+    for(int j = 0; j < 2; j++)
     {
-      for(int j = 0; j < 2; j++)
+      if (i > 0)
       {
-        if (i != 0)
-          close(previous_file_descriptor[j]);
-        previous_file_descriptor[j] = file_descriptor[j];
+        close(previousFileDescriptor[j]);
       }
+      previousFileDescriptor[j] = fileDescriptor[j];
     }
   }
-  close(file_descriptor[0]);
-  close(file_descriptor[1]);
+  close(fileDescriptor[0]);
+  close(fileDescriptor[1]);
   wait(NULL);
-  for(int i = 0; i < commandCount; i++)
+}
+
+void processCommandLine(char* commandLine)
+{
+  printf("%s:\n", commandLine);
+  char** commands = NULL;
+  int commandsCount = 0;
+
+  parseCommands(commandLine, &commands, &commandsCount);
+  executeCommandLine(commands, commandsCount);
+
+  for(int i = 0; i < commandsCount; i++)
   {
-    free(command[i]);
+    free(commands[i]);
+  }
+  free(commands);
+}
+
+int main(int argc, char** argv)
+{
+  if (argc < 2)
+  {
+    printf("Usage: \"command1 | command2\"\n");
+    return 0;
+  }
+  else
+  {
+    for(int i = 1; i < argc; i++)
+    {
+      processCommandLine(argv[i]);
+    }
   }
   return 0;
 }
