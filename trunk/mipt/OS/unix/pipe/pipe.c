@@ -50,7 +50,7 @@ void executeCommand(char* command, int input, int output, int obsoletePipe, int 
   if (childPID == -1)
   {
     fprintf(stderr, "Can\'t fork\n");
-    exit(EXIT_FAILURE);
+    return;
   }
 
   if (childPID == 0)
@@ -59,6 +59,13 @@ void executeCommand(char* command, int input, int output, int obsoletePipe, int 
     close(obsoletePipe1);
     dup2(input, STDIN_FILENO);
     dup2(output, STDOUT_FILENO);
+
+    if (input != STDIN_FILENO)
+      close(input);
+
+    if (output != STDOUT_FILENO)
+      close(output);
+
     execl("/bin/bash", "bash", "-c", command, NULL);
   }
 }
@@ -94,8 +101,8 @@ void executeCommandLine(char** commands, int commandsCount)
     }
   }
   close(fileDescriptor[0]);
-  close(fileDescriptor[1]);
-  wait(NULL);
+  for(int i = 0; i < commandsCount; i++)
+    wait(NULL);
 }
 
 void processCommandLine(char* commandLine)
@@ -115,8 +122,7 @@ void processCommandLine(char* commandLine)
 }
 
 int main(int argc, char** argv)
-{
-  if (argc < 2)
+{ if (argc < 2)
   {
     printf("Usage: \"command1 | command2\"\n");
     return 0;
