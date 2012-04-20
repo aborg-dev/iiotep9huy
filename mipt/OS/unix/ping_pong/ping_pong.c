@@ -27,84 +27,123 @@
 #include <fcntl.h>
 #include <memory.h>
 
+#define REPORT(message) fprintf(stderr, "%d: %s\n", getpid(), message);
+
 const size_t MESSAGE_MAXLEN = 20;
 const size_t SEMAPHORE_NAME_LEN = 15;
 
+const char* FIFO_NAME       = "/tmp/ping_pong_fifo";
+const char* DELETE_SEM_NAME = "delete_semaphore";
+const char* FIFO_SEM_NAME   = "fifo_semaphore";
 
-int main(int argc, char** argv)
+typedef struct
 {
-  char *semaphore_name = (char*) malloc(SEMAPHORE_NAME_LEN);
-  char *partner_semaphore_name = (char*) malloc(SEMAPHORE_NAME_LEN);
-  char* buf = (char*) malloc(MESSAGE_MAXLEN);
-  sprintf(semaphore_name, "ping_pong_%d", getpid());
-  //fprintf(stderr, "%s\n", semaphore_name);
+  sem_t* sem;
+  char* name;
+} named_semaphore;
 
-  sem_t* my_semaphore = sem_open(semaphore_name, O_CREAT, 0777, 0);
-  sem_t* partner_semaphore = NULL;
-  sem_t* file_semaphore = sem_open("fifo_semaphore", O_CREAT, 0777, 1);
+void introduction(named_semaphore* my_sem,
+                  named_semaphore* partner_sem,
+                  sem_t* file_sem, 
+                  int* fd,
+                  char** buf)
+{
+  REPORT("I'm waiting for file");
 
-  sem_post(file_semaphore);
-  fprintf(stderr, "I'm waiting for file\n");
+  sem_wait(file_sem);
+  *fd = mkfifo(FIFO_NAME, 0777);
+  sem_post(file_sem);
 
-  sem_wait(file_semaphore);
-  int file_descriptor = mkfifo("/tmp/ping_pong_fifo", 0777);
-  sem_post(file_semaphore);
-
-  if (file_descriptor == 0)
+  if (*fd == 0)
   {
-    file_descriptor = open("/tmp/ping_pong_fifo", O_RDWR);
-    fprintf(stderr, "I am here1 %d\n", file_descriptor);
+    *fd = open(FIFO_NAME, O_RDWR);
 
-    sem_wait(file_semaphore);
-    fprintf(stderr, "I created file! %d\n", getpid());
-    write(file_descriptor, semaphore_name, SEMAPHORE_NAME_LEN); 
-    sem_post(file_semaphore);
+    sem_wait(file_sem);
+    REPORT("I created file");
+    write(*fd, my_sem->name, SEMAPHORE_NAME_LEN); 
+    sem_post(file_sem);
 
-    fprintf(stderr, "I'm waiting for my_semaphore\n");
-    sem_wait(my_semaphore);
+    REPORT("I'm waiting for my_sem");
+    sem_wait(my_sem->sem);
 
-    read(file_descriptor, partner_semaphore_name, SEMAPHORE_NAME_LEN);
-    partner_semaphore = sem_open(partner_semaphore_name, 0);
-    memset(buf, 0, sizeof(buf));
-    sprintf(buf, "Hi! My name is %d\n", getpid());
-    write(file_descriptor, buf, MESSAGE_MAXLEN);
-    fprintf(stderr, "Woohoo!");
+    read(*fd, partner_sem->name, SEMAPHORE_NAME_LEN);
+    partner_sem->sem = sem_open(partner_sem->name, 0);
+    memset(*buf, 0, sizeof(*buf));
+    sprintf(*buf, "Hi, My name is %d", getpid());
+    write(*fd, *buf, MESSAGE_MAXLEN);
+    REPORT("Message was written");
 
-    sem_post(partner_semaphore);
-
+    sem_post(partner_sem->sem);
   }
   else
   {
-    file_descriptor = open("/tmp/ping_pong_fifo", O_RDWR);
-    fprintf(stderr, "I am here2 %d\n", file_descriptor);
-    sem_wait(file_semaphore);
-    fprintf(stderr, "I've opened file! %d\n", getpid());
-    read(file_descriptor, partner_semaphore_name, SEMAPHORE_NAME_LEN);
-    fprintf(stderr, "%s\n", partner_semaphore_name);
-    partner_semaphore = sem_open(partner_semaphore_name, 0);
-    write(file_descriptor, semaphore_name, SEMAPHORE_NAME_LEN);
-    sem_post(file_semaphore);
-    sem_post(partner_semaphore);
+    *fd = open(FIFO_NAME, O_RDWR);
+    //fprintf(stderr, "I am here2 %d\n", *fd);
+    sem_wait(file_sem);
+    REPORT("I've opened file!");
+    read(*fd, partner_sem->name, SEMAPHORE_NAME_LEN);
+    REPORT(partner_sem->name)
+    partner_sem->sem = sem_open(partner_sem->name, 0);
+    write(*fd, my_sem->name, SEMAPHORE_NAME_LEN);
+    sem_post(file_sem);
+    sem_post(partner_sem->sem);
   }
+}
+
+void converse(sem_t* my_sem, 
+              sem_t* partner_sem,
+              int fd,
+              char** buf)
+{
+    fprintf(stderr, "\n");
+    sem_wait(my_sem);
+    memset(*buf, 0, sizeof(*buf));
+    read(fd, *buf, MESSAGE_MAXLEN);
+    REPORT("I've got message: ");
+    REPORT(*buf);
+    memset(*buf, 0, sizeof(*buf));
+    sprintf(*buf, "Hi, my name is %d", getpid());
+    write(fd, *buf, MESSAGE_MAXLEN);
+    sem_post(partner_sem);
+    sleep(5);
+}
+
+int main(int argc, char** argv)
+{
+  named_semaphore my_sem;
+  named_semaphore partner_sem;
+  my_sem.name = (char*) malloc(SEMAPHORE_NAME_LEN);
+  partner_sem.name = (char*) malloc(SEMAPHORE_NAME_LEN);
+  char* buf = (char*) malloc(MESSAGE_MAXLEN);
+  sprintf(my_sem.name, "ping_pong_%d", getpid());
+
+  my_sem.sem      = sem_open(my_sem.name, O_CREAT, 0777, 0);
+  partner_sem.sem = NULL;
+  sem_t* file_sem = sem_open(FIFO_SEM_NAME, O_CREAT, 0777, 1);
+  int fd = 0;
+
+  introduction(&my_sem, &partner_sem, file_sem, &fd, &buf);
 
   int count = 3;
-  fprintf(stderr, "Partner semaphore = %s\n", partner_semaphore_name);
-  fprintf(stderr, "I'm near infinite while %d\n", getpid());
+  REPORT("Partner semaphore");
+  REPORT(partner_sem.name);
+  REPORT("I'm near inf while");
   while (count--)
   {
-    sem_wait(my_semaphore);
-    read(file_descriptor, buf, MESSAGE_MAXLEN);
-    fprintf(stderr, "I am %d. I've got message: \" %s \"\n", getpid(), buf);
-    sprintf(buf, "Hi, my name is %d", getpid());
-    write(file_descriptor, buf, MESSAGE_MAXLEN);
-    sem_post(partner_semaphore);
-    sleep(5);
+    converse(my_sem.sem, 
+             partner_sem.sem, 
+             fd, &buf);
   }
-  free(buf);
-  free(partner_semaphore_name);
-  sem_close(my_semaphore);
-  sem_close(file_semaphore);
-  unlink("/tmp/ping_pong_fifo");
-  fprintf(stderr, "process %d is finished\n", getpid());
+  //int sem_value = 0;
+  //sem_getvalue(file_sem, &sem_value);
+  //fprintf(stderr, "Sem value: %d\n", sem_value);
+  REPORT("Deleting stuff");
+  //free(buf);
+  free(my_sem.name);
+  free(partner_sem.name);
+  sem_unlink(my_sem.name);
+  sem_unlink(FIFO_SEM_NAME);
+  unlink(FIFO_NAME);
+  REPORT("process is finished");
   return 0;
 }
