@@ -6,6 +6,8 @@ LFLAGS          =
 SYS_LIBS        = -lpthread
 
 TARGETS = ping_pong.o
+SOURCES=$(wildcard *.c)
+OBJECTS=$(SOURCES:%.c=%.o)
 
 #---------- targets --------------------------------------
 all:  $(TARGETS)
@@ -21,5 +23,4 @@ ping_pong:  ping_pong.c
 #---------- clear up -------------------------------------
 clean:
 				rm  --force  $(EXECUTABLE) $(OBJECTS) $(PREREQUISITES)
-				sudo rm /tmp/ping_pong_fifo
  
