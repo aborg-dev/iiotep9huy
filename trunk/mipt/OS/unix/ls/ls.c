@@ -11,6 +11,8 @@
 #include <grp.h>
 #include <stdbool.h>
 
+#define PATH_MAX 4096
+
 const char DIR_SEPARATOR = '/';
 const char* DIR_SEPARATOR_STR = "/";
 
@@ -64,6 +66,7 @@ void printFileStats(char* file_path, char* file_name, bool detailed)
   }
 }
 
+
 bool isExistingPath(char* absolute_path)
 {
   DIR* dir_file = opendir(absolute_path);
@@ -76,77 +79,80 @@ bool isExistingPath(char* absolute_path)
   return true;
 }
 
-void ls(char* absolute_path, int depth, bool detailed)
+void ls(char* absolute_path, bool detailed);
+
+void printDirectoryContent(char* absolute_path, int path_length, bool detailed)
 {
-  if (!isExistingPath(absolute_path))
-    return;
-
-  printf("\n%s:\n", absolute_path);
-  size_t path_length = strlen(absolute_path);
-  char*  file_path   = (char*) malloc(path_length + 2);
-
-  strcpy(file_path, absolute_path);
-  if (file_path[path_length - 1] != DIR_SEPARATOR)
-  {
-    strcat(file_path, DIR_SEPARATOR_STR);
-    path_length++;
-  }
-  
-  // Printing directory content
   DIR*   dir_file    = opendir(absolute_path);
   struct dirent* dir = readdir(dir_file);
   while(dir)
   {
     if (isValidFileName(dir->d_name))
     {
-      if (strlen(file_path) < path_length + strlen(dir->d_name))
-        file_path = (char*) realloc(file_path, path_length + strlen(dir->d_name) + 1);
-      file_path[path_length] = '\0';
-      strcat(file_path, dir->d_name);
+      absolute_path[path_length] = '\0';
+      strcat(absolute_path, dir->d_name);
 
-      printFileStats(file_path, dir->d_name, detailed);
+      printFileStats(absolute_path, dir->d_name, detailed);
     }
     dir = readdir(dir_file);
   }
+  absolute_path[path_length] = '\0';
   closedir(dir_file);
-  free(dir);
-  // --------------------------
+}
 
-  // Exploring child directories
-  dir_file    = opendir(absolute_path);
-  dir = readdir(dir_file);
+void exploreChildDirectories(char* absolute_path, int path_length, bool detailed)
+{
+  DIR*   dir_file    = opendir(absolute_path);
+  struct dirent* dir = readdir(dir_file);
   while(dir)
   {
     if (isValidFileName(dir->d_name))
     {
-      if (strlen(file_path) < path_length + strlen(dir->d_name))
-        file_path = (char*) realloc(file_path, path_length + strlen(dir->d_name) + 1);
-      file_path[path_length] = '\0';
-      strcat(file_path, dir->d_name);
+      absolute_path[path_length] = '\0';
+      strcat(absolute_path, dir->d_name);
 
-      ls(file_path, depth + 1, detailed);
+      ls(absolute_path, detailed);
     }
     dir = readdir(dir_file);
   }
+  absolute_path[path_length] = '\0';
   closedir(dir_file);
-  free(dir);
-  // --------------------------
+}
 
-  free(file_path);
+void ls(char* absolute_path, bool detailed)
+{
+  if (!isExistingPath(absolute_path))
+    return;
+
+  printf("\n%s:\n", absolute_path);
+  size_t path_length = strlen(absolute_path);
+
+  if (absolute_path[path_length - 1] != DIR_SEPARATOR)
+  {
+    strcat(absolute_path, DIR_SEPARATOR_STR);
+    path_length++;
+  }
+  
+  printDirectoryContent(absolute_path, path_length, detailed);
+  exploreChildDirectories(absolute_path, path_length, detailed);
 }
 
 int main(int argc, char** argv)
 {
+  char path[PATH_MAX];
+  memset(path, 0, sizeof(path));
   if (argc < 2)
   {
-    ls(".", 0, false);
+    strcpy(path, ".");
+    ls(path, false);
     printf("\n");
   }
   else
   {
     for(int i = 1; i < argc; i++)
     {
-      ls(argv[i], 0, true);
+      strcpy(path, argv[i]);
+      ls(path, true);
     }
   }
   return 0;
