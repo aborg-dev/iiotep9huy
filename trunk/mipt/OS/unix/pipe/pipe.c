@@ -11,7 +11,9 @@ int countPipes(char* input)
   if (input == NULL)
     return 0;
   int pipeCount = 0;
-  while (*input != '\0') { if (*input == '|')
+  while (*input != '\0') 
+  { 
+    if (*input == '|')
     {
       pipeCount++;
     }
@@ -43,6 +45,15 @@ void parseCommands(char* input, char*** commands, int* commandsCount)
   }
 }
 
+void freeCommands(char** commands, int commandsCount)
+{
+  for(int i = 0; i < commandsCount; i++)
+  {
+    free(commands[i]);
+  }
+  free(commands);
+}
+
 void executeCommand(char* command, int input, int output, int obsoletePipe, int obsoletePipe1)
 {
   pid_t childPID = fork();
@@ -70,7 +81,7 @@ void executeCommand(char* command, int input, int output, int obsoletePipe, int 
   }
 }
 
-void executeCommandLine(char** commands, int commandsCount)
+void executeCommands(char** commands, int commandsCount)
 {
   int fileDescriptor[2];
   int previousFileDescriptor[2];
@@ -89,7 +100,8 @@ void executeCommandLine(char** commands, int commandsCount)
       dup2(STDOUT_FILENO, fileDescriptor[1]);
     }
 
-    executeCommand(commands[i], previousFileDescriptor[0], fileDescriptor[1], previousFileDescriptor[1], fileDescriptor[0]);
+    executeCommand(commands[i], previousFileDescriptor[0], fileDescriptor[1], 
+                                previousFileDescriptor[1], fileDescriptor[0]);
 
     for(int j = 0; j < 2; j++)
     {
@@ -112,27 +124,20 @@ void processCommandLine(char* commandLine)
   int commandsCount = 0;
 
   parseCommands(commandLine, &commands, &commandsCount);
-  executeCommandLine(commands, commandsCount);
-
-  for(int i = 0; i < commandsCount; i++)
-  {
-    free(commands[i]);
-  }
-  free(commands);
+  executeCommands(commands, commandsCount);
+  freeCommands(commands, commandsCount);
 }
 
 int main(int argc, char** argv)
-{ if (argc < 2)
+{ 
+  if (argc < 2)
   {
     printf("Usage: \"command1 | command2\"\n");
     return 0;
   }
-  else
+  for(int i = 1; i < argc; i++)
   {
-    for(int i = 1; i < argc; i++)
-    {
-      processCommandLine(argv[i]);
-    }
+    processCommandLine(argv[i]);
   }
   return 0;
 }
