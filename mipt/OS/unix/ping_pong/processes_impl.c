@@ -42,7 +42,6 @@
 const size_t ITERATIONS = 4;
 
 const char* FIFO_NAME       = "/tmp/ping_pong_fifo";
-const char* FIFO_SEM_NAME   = "fifo_semaphore";
 const char* SEM_NAME_PREFIX = "ping_pong";
 
 // --------------message-----------------
@@ -77,12 +76,12 @@ struct data_channel_opening_params
 };
 
 struct data_channel* create_data_channel(struct data_channel_creation_params*
-                                  fifo_params)
+                                         fifo_params)
 {
   struct data_channel* dtch = (struct data_channel*) malloc(sizeof(struct data_channel));
 
-  init_string(&(dtch->name));
-  print_to_string(&(dtch->name), fifo_params->name.content);
+  init_string(&dtch->name);
+  print_to_string(&dtch->name, fifo_params->name.content);
 
   mkfifo(dtch->name.content, fifo_params->mode); 
   dtch->fd = open(dtch->name.content, fifo_params->oflag);
@@ -95,9 +94,9 @@ struct data_channel* open_data_channel(struct data_channel_opening_params*
   struct data_channel* dtch = (struct data_channel*) malloc(sizeof(struct data_channel));
 
   init_string(&dtch->name);
-  dtch->fd = -1;
   print_to_string(&dtch->name, fifo_params->name.content);
 
+  dtch->fd = -1;
   while (dtch->fd < 0)
   {
     dtch->fd = open(dtch->name.content, fifo_params->oflag); 
@@ -114,12 +113,12 @@ void delete_data_channel(struct data_channel* dtch)
 
 void send_message(const struct message* msg, struct data_channel* dtch)
 {
-  print_string(dtch->fd, &(msg->greeting));
+  print_string(dtch->fd, &msg->greeting);
 }
 
 void recive_message(struct message* msg, struct data_channel* dtch)
 {
-  read_to_string(dtch->fd, &(msg->greeting));
+  read_to_string(dtch->fd, &msg->greeting);
 }
 
 // --------------data_channel-----------------
@@ -136,31 +135,21 @@ struct execution_params
 
 struct parallel_entity
 {
-  string name;
   pid_t pid;
   void* (*parallel_function)(void*);
 };
 
-struct parallel_entity_creation_params
-{
-  string name;
-};
-
-struct parallel_entity* create_parallel_entity(
-  const struct parallel_entity_creation_params* creation_params) 
+struct parallel_entity* create_parallel_entity() 
 {
   struct parallel_entity* ent = 
     (struct parallel_entity*) malloc(sizeof(struct parallel_entity));
 
-  init_string(&(ent->name));
-  ent->name = creation_params->name;
   ent->pid = getpid();
   return ent;
 }
 
 void delete_parallel_entity(struct parallel_entity* ent)
 {
-  free_string(&(ent->name));
 }
 
 void start_parallel_execution(struct parallel_entity* ent,
@@ -325,11 +314,7 @@ int main(int argc, char** argv)
   if (playerNum == 0)
     return 0;
 
-  struct parallel_entity_creation_params creation_params;
-  init_string(&creation_params.name);
-
-
-  struct parallel_entity* player;
+  struct parallel_entity* player = create_parallel_entity();
   struct execution_params* exec_params = 
     create_execution_params(playerNum);
 
@@ -344,8 +329,6 @@ int main(int argc, char** argv)
       data_channel_params.oflag = O_RDWR | O_NONBLOCK;
       exec_params->dtch = create_data_channel(&data_channel_params);
 
-      print_to_string(&creation_params.name, "First process"); 
-      player = create_parallel_entity(&creation_params);
       player->parallel_function = first_process_function;
       break;
     }
@@ -357,8 +340,6 @@ int main(int argc, char** argv)
       data_channel_params.oflag = O_RDWR | O_NONBLOCK;
       exec_params->dtch = open_data_channel(&data_channel_params);
 
-      print_to_string(&creation_params.name, "Second process"); 
-      player = create_parallel_entity(&creation_params);
       player->parallel_function = second_process_function;
       break;
     }
