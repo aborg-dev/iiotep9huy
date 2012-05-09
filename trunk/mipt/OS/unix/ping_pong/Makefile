@@ -2,10 +2,10 @@
 
 CC              = gcc
 CFLAGS          = -std=c99 -Wall
-LFLAGS          = 
-SYS_LIBS        = -lpthread
+LFLAGS          = -L.
+SYS_LIBS        = -lstring -lpthread -lnamed_sem
 
-TARGETS = ping_pong.o
+TARGETS = processes_impl.o
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:%.c=%.o)
 
@@ -13,12 +13,12 @@ OBJECTS=$(SOURCES:%.c=%.o)
 all:  $(TARGETS)
 
 %.o:	%.c
-			$(CC) $(CFLAGS) $(SYS_LIBS) $*.c -o $@
+			$(CC) $(CFLAGS) $(LFLAGS) $(SYS_LIBS) $*.c -o $@
 
 #---------- target 1 -------------------------------------
 #  C  target
-ping_pong:  ping_pong.c
-						$(CC) $(LFLAGS) -o $@ $@.o  $(SYS_LIBS)
+ping_pong:  processes_impl.c
+						$(CC) $(LFLAGS) -o $@ $@.o $(SYS_LIBS)
 
 #---------- clear up -------------------------------------
 clean:
