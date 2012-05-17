@@ -131,7 +131,22 @@ struct execution_params
   struct data_channel* dtch;
   struct synchronization_object* my_turn_sync;
   struct synchronization_object* partner_turn_sync;
+  int player_num;
 };
+
+struct execution_params* create_execution_params()
+{
+  struct execution_params* exec_params = 
+    (struct execution_params*) malloc(sizeof(struct execution_params));
+  return exec_params;
+}
+
+void delete_execution_params(struct execution_params* exec_params)
+{
+  delete_data_channel(exec_params->dtch);
+  delete_synchronization_object(exec_params->partner_turn_sync);
+  delete_synchronization_object(exec_params->my_turn_sync);
+}
 
 struct parallel_entity
 {
@@ -212,22 +227,32 @@ void exit_from_critical_section(struct synchronization_object* obj)
 
 // --------------synchronization_object-----------------
 
-void* first_process_function(void* params)
+void* process_function(void* params)
 {
-  REPORT("First process execution started");
+  REPORT("process execution started");
   struct execution_params* exec_params = (struct execution_params*) params; 
+  int player_num = exec_params->player_num;
   struct message msg;
   init_string(&msg.greeting);
-  print_to_string(&msg.greeting, "%d: Hello %d", getpid(), 0);
-  send_message(&msg, exec_params->dtch);
-  exit_from_critical_section(exec_params->partner_turn_sync);
 
-  for(int iteration = 1; iteration < ITERATIONS + 1; ++iteration)
+  int start_iteration = 0;
+  int finish_iteration = ITERATIONS;
+  if (player_num == 1)
+  {
+    start_iteration++;
+    finish_iteration++;
+    print_to_string(&msg.greeting, "%d: Hello %d", getpid(), 0);
+    send_message(&msg, exec_params->dtch);
+    exit_from_critical_section(exec_params->partner_turn_sync);
+  }
+
+  for(int iteration = start_iteration; 
+          iteration < finish_iteration; ++iteration)
   {
     enter_critical_section(exec_params->my_turn_sync);
 
     recive_message(&msg, exec_params->dtch);
-    printf("first  recived: '%s'\n", msg.greeting.content);
+    printf("%d recived: '%s'\n", player_num, msg.greeting.content);
 
     print_to_string(&msg.greeting, "%d: Hello %d", getpid(), iteration);
     send_message(&msg, exec_params->dtch);
@@ -237,118 +262,94 @@ void* first_process_function(void* params)
   }
 
   free_string(&msg.greeting);
+  REPORT("process execution finished");
   return 0;
 }
 
-void* second_process_function(void* params)
+struct data_channel* create_game_data_channel()
 {
-  REPORT("Second process execution started");
-  struct execution_params* exec_params = (struct execution_params*) params; 
-  struct message msg;
-  init_string(&msg.greeting);
+  struct data_channel_creation_params data_channel_params;
+  init_string(&data_channel_params.name);
+  print_to_string(&data_channel_params.name, FIFO_NAME);
+  data_channel_params.mode = 0777;
+  data_channel_params.oflag = O_RDWR | O_NONBLOCK;
+  return create_data_channel(&data_channel_params);
+}
 
-  for(int iteration = 0; iteration < ITERATIONS; ++iteration)
+struct data_channel* open_game_data_channel()
+{
+  struct data_channel_opening_params data_channel_params;
+  init_string(&data_channel_params.name);
+  print_to_string(&data_channel_params.name, FIFO_NAME);
+  data_channel_params.oflag = O_RDWR | O_NONBLOCK;
+  return open_data_channel(&data_channel_params);
+}
+
+struct data_channel* get_game_data_channel(int player_num)
+{
+  switch (player_num)
   {
-    enter_critical_section(exec_params->my_turn_sync);
-
-    recive_message(&msg, exec_params->dtch);
-    printf("second recived: '%s'\n", msg.greeting.content);
-
-    print_to_string(&msg.greeting, "%d: Hello %d", getpid(), iteration);
-
-    send_message(&msg, exec_params->dtch);
-
-    exit_from_critical_section(exec_params->partner_turn_sync);
-    sleep(2);
+    case 1:
+      return create_game_data_channel();
+    case 2:
+      return open_game_data_channel();
   }
-
-  free_string(&msg.greeting);
-  return 0;
+  printf("Wrong player num: %d\n", player_num);
+  return NULL;
 }
 
-struct execution_params* create_execution_params(int playerNum)
+struct synchronization_object* 
+  create_game_synchronization_object(int player_num)
 {
-  struct execution_params* exec_params = 
-    (struct execution_params*) malloc(sizeof(struct execution_params));
+  struct synchronization_object_creation_params sync_params;
+  init_string(&sync_params.name);
+  print_to_string(&sync_params.name, "%s_%d", SEM_NAME_PREFIX, player_num);
+  sync_params.init_value = 0;
+  return create_synchronization_object(&sync_params);
+}
 
-  struct synchronization_object_creation_params my_sync_params;
-  init_string(&my_sync_params.name);
-  print_to_string(&my_sync_params.name, 
-                  "%s_%d", SEM_NAME_PREFIX, playerNum);
-
-  struct synchronization_object_creation_params partner_sync_params;
-  init_string(&partner_sync_params.name);
-  print_to_string(&partner_sync_params.name, 
-                  "%s_%d", SEM_NAME_PREFIX, (playerNum == 1) ? 2 : 1);
-
-  my_sync_params.init_value = 0;
-  partner_sync_params.init_value = 0;
+struct execution_params* create_game_execution_params(int player_num)
+{
+  struct execution_params* exec_params = create_execution_params();
+  exec_params->player_num = player_num;
+  exec_params->dtch = get_game_data_channel(player_num);
 
   exec_params->my_turn_sync = 
-    create_synchronization_object(&my_sync_params);
+    create_game_synchronization_object(player_num);
 
+  int partner_num = (player_num == 1) ? 2 : 1;
   exec_params->partner_turn_sync = 
-    create_synchronization_object(&partner_sync_params);
+    create_game_synchronization_object(partner_num);
   
   return exec_params;
 }
 
-void delete_execution_params(struct execution_params* exec_params)
+struct parallel_entity* create_game_parallel_entity(int player_num)
 {
-  delete_data_channel(exec_params->dtch);
-  delete_synchronization_object(exec_params->partner_turn_sync);
-  delete_synchronization_object(exec_params->my_turn_sync);
+  struct parallel_entity* player = create_parallel_entity();
+  player->parallel_function = process_function;
+  return player;
 }
+
 
 int main(int argc, char** argv)
 {
-  int playerNum = 0;
+  int player_num = 0;
   if (argc == 2)
-  {
-    if (argv[1][0] == '1')
-      playerNum = 1;
-    else
-    if (argv[1][0] == '2')
-      playerNum = 2;
-  }
-  if (playerNum == 0)
+    player_num = argv[1][0] - '0';
+
+  if (player_num != 1 && player_num != 2)
     return 0;
 
-  struct parallel_entity* player = create_parallel_entity();
-  struct execution_params* exec_params = 
-    create_execution_params(playerNum);
+  struct parallel_entity* player 
+    = create_game_parallel_entity(player_num);
 
-  switch (playerNum)
-  {
-    case 1:
-    {
-      struct data_channel_creation_params data_channel_params;
-      init_string(&data_channel_params.name);
-      print_to_string(&data_channel_params.name, FIFO_NAME);
-      data_channel_params.mode = 0777;
-      data_channel_params.oflag = O_RDWR | O_NONBLOCK;
-      exec_params->dtch = create_data_channel(&data_channel_params);
-
-      player->parallel_function = first_process_function;
-      break;
-    }
-    case 2:
-    {
-      struct data_channel_opening_params data_channel_params;
-      init_string(&data_channel_params.name);
-      print_to_string(&data_channel_params.name, FIFO_NAME);
-      data_channel_params.oflag = O_RDWR | O_NONBLOCK;
-      exec_params->dtch = open_data_channel(&data_channel_params);
-
-      player->parallel_function = second_process_function;
-      break;
-    }
-  }
+  struct execution_params* exec_params 
+    = create_game_execution_params(player_num);
  
   start_parallel_execution(player, exec_params);
 
   delete_execution_params(exec_params);
   delete_parallel_entity(player);
-  REPORT("Process is finished");
   return 0;
 }

@@ -92,6 +92,17 @@ void print_string(int fd, const string* str)
   write(fd, str->content, str->length);
 }
 
+bool equal_string(string* str1, string* str2)
+{
+  if (!str1 || !str2)
+    return false;
+
+  if (str1->length != str2->length)
+    return false;
+
+  return (strcmp(str1->content, str2->content) == 0);
+}
+
 void read_to_string(int fd, string* str)
 {
   char buf[READ_BLOCK_SIZE];
@@ -114,4 +125,5 @@ void read_to_string(int fd, string* str)
     offset = new_len;
   }
 }
+
 

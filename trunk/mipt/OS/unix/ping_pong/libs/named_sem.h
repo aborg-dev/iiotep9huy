@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #include "string.h"
 
@@ -39,6 +40,6 @@ named_sem* create_semaphore(int oflag, mode_t mode);
 void init_semaphore(named_sem* sem, int oflag, mode_t mode);
 void free_semaphore(named_sem* sem);
 void unlink_semaphore(named_sem* sem);
-int  open_named_sem(named_sem* sem, int init_value);
+bool open_named_sem(named_sem* sem, int init_value);
 
 #endif /* NAMED_SEM_H */

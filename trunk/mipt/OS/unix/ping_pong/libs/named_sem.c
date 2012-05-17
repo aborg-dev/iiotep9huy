@@ -52,7 +52,7 @@ void unlink_semaphore(named_sem* sem)
   free_semaphore(sem);
 }
 
-int open_named_sem(named_sem* sem, int init_value)
+bool open_named_sem(named_sem* sem, int init_value)
 {
   sem->sem = sem_open(sem->name.content, sem->oflag, sem->mode, init_value);
   return (sem->sem == SEM_FAILED);
