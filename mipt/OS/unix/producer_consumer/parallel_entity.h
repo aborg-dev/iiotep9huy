@@ -48,10 +48,11 @@ void recive_message(struct message* msg, struct data_channel* dtch);
 // --------------parallel_entity-----------------
 
 struct execution_params;
+struct parallel_entity_creation_params;
 struct parallel_entity;
 
 struct execution_params* create_execution_params();
-struct parallel_entity* create_parallel_entity();
+struct parallel_entity* create_parallel_entity(struct parallel_entity_creation_params* params);
 
 void delete_execution_params();
 void delete_parallel_entity(struct parallel_entity* ent);
