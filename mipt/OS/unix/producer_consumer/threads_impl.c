@@ -36,10 +36,8 @@
 
 #define STOCK_SIZE 50
 #define ITERATIONS 3
-#define PRODUCERS_NUMBER 1
-#define CONSUMERS_NUMBER 1
-
-//const char** = {"ololo", "alala"};
+#define PRODUCERS_NUMBER 5
+#define CONSUMERS_NUMBER 5
 
 // --------------product-----------------
 
@@ -66,6 +64,7 @@ struct product* create_product(int id, char* product_name)
 void delete_product(struct product* item)
 {
   free_string(&item->product_name);
+  free(item);
 }
 
 // --------------product-----------------
@@ -77,7 +76,6 @@ struct storage
 {
   struct product** products;
   struct synchronization_object* storage_is_used; 
-  struct synchronization_object* storage_has_available_place;
   size_t storage_size;
   size_t storage_available;
 };
@@ -94,7 +92,6 @@ struct storage* create_storage(struct storage_creation_params*
   stock->storage_size = stock->storage_available = storage_params->storage_size;
   stock->products = (struct product**) malloc(sizeof(struct product*) * stock->storage_size);
   stock->storage_is_used = create_synchronization_object(NULL);
-  stock->storage_has_available_place = create_synchronization_object(NULL);
   return stock;
 }
 
@@ -104,23 +101,28 @@ void delete_storage(struct storage* stock)
     delete_product(stock->products[i]);
   free(stock->products);
   delete_synchronization_object(stock->storage_is_used);
-  delete_synchronization_object(stock->storage_has_available_place);
+  free(stock);
 }
 
 void add_item(struct product* item, struct storage* stock)
 {
   printf("Adding item %zd %s\n", item->id, item->product_name.content);
-  enter_critical_section(stock->storage_has_available_place);
-  enter_critical_section(stock->storage_is_used);
-
-  size_t put_position = stock->storage_size - stock->storage_available;
-
-  stock->products[put_position] = item;
-  
-  if (--(stock->storage_available) != 0)
-    exit_from_critical_section(stock->storage_has_available_place);
-
-  exit_from_critical_section(stock->storage_is_used);
+  while (1)
+  {
+    enter_critical_section(stock->storage_is_used);
+    
+    if (stock->storage_available > 0)
+    {
+      size_t put_position = stock->storage_size - stock->storage_available;
+      stock->products[put_position] = item;
+      stock->storage_available--;
+      exit_from_critical_section(stock->storage_is_used);
+      return;
+    }
+    
+    exit_from_critical_section(stock->storage_is_used);
+    sleep(3);
+  }
 }
 
 int find_item_index(struct product_info* item_info, struct storage* stock)
@@ -146,6 +148,7 @@ struct product* give_item_by_index(size_t index, struct storage* stock)
   {
     stock->products[i] = stock->products[i + 1];
   }
+  stock->storage_available++;
   return item;
 }
 
@@ -158,11 +161,7 @@ struct product* get_item(struct product_info* item_info, struct storage* stock)
     int item_index = find_item_index(item_info, stock);
     if (item_index != -1)
     {
-      if (++(stock->storage_available) == 1)
-        exit_from_critical_section(stock->storage_has_available_place);
-
       struct product* item = give_item_by_index(item_index, stock);
-
       exit_from_critical_section(stock->storage_is_used);
       return item;
     }
@@ -289,6 +288,7 @@ void* consumer_function(void* params)
   struct execution_params* exec_params = (struct execution_params*) params; 
   struct storage* stock = exec_params->stock;
   struct product_info item_info;
+  init_string(&item_info.product_name);
   print_to_string(&item_info.product_name, "Banana");
   for(int i = 0; i < ITERATIONS; ++i)
   {
@@ -328,7 +328,7 @@ struct parallel_entity** create_multiple_parallel_entities(int player_type, int 
 void start_multiple_parallel_execution(struct parallel_entity** entities, int number, struct execution_params* params)
 {
   for(int i = 0; i < number; i++)
-    start_parallel_execution(entities[i], params);
+      start_parallel_execution(entities[i], params);
 }
 
 void wait_multiple_parallel_entities(struct parallel_entity** entities, int number)
