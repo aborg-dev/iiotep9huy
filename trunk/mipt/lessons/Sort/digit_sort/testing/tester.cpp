@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
+#include <vector>
 #include <time.h>
 #include <cassert>
 
