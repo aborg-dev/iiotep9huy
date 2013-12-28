@@ -1,0 +1,1871 @@
+Terminals unused in grammar
+
+   ELSIF
+   NE
+   '^'
+
+
+Grammar
+
+    0 $accept: module $end
+
+    1 module: MODULE IDENTIFIER ';' declarations END IDENTIFIER '.'
+
+    2 $@1: %empty
+
+    3 module: MODULE IDENTIFIER ';' declarations BEGIN_ $@1 statementSequence END IDENTIFIER '.'
+
+    4 declarations: %empty
+    5             | declarations CONST IDENTIFIER '=' expression ';'
+    6             | declarations TYPE IDENTIFIER '=' type ';'
+    7             | declarations VAR identifierList ':' type ';'
+    8             | declarations procedureDeclaration ';'
+
+    9 procedureDeclaration: procedureHeading ';' procedureBody IDENTIFIER
+
+   10 procedureBody: declarations END
+   11              | declarations BEGIN_ statementSequence END
+
+   12 procedureHeading: PROCEDURE IDENTIFIER
+   13                 | PROCEDURE IDENTIFIER formalParameters
+
+   14 formalParameters: '(' FPSectionSequence ')'
+
+   15 FPSectionSequence: FPSection
+   16                  | FPSectionSequence ';' FPSection
+
+   17 FPSection: identifierList ':' type
+   18          | VAR identifierList ':' type
+
+   19 type: IDENTIFIER
+   20     | arrayType
+   21     | recordType
+
+   22 recordType: RECORD fieldListSequence END
+
+   23 fieldListSequence: fieldList
+   24                  | fieldListSequence ';' fieldList
+
+   25 fieldList: identifierList ':' type
+
+   26 arrayType: ARRAY expression OF type
+
+   27 identifierList: IDENTIFIER
+   28               | identifierList ',' IDENTIFIER
+
+   29 statementSequence: statement
+   30                  | statementSequence ';' statement
+
+   31 statement: assignment
+   32          | procedureCall
+   33          | ifStatement
+   34          | whileStatement
+
+   35 whileStatement: WHILE expression DO statementSequence END
+
+   36 ifStatement: IF expression THEN statementSequence END
+   37            | IF expression THEN statementSequence ELSE statementSequence END
+
+   38 procedureCall: IDENTIFIER
+   39              | IDENTIFIER actualParameters
+
+   40 actualParameters: '(' expressionSequence ')'
+
+   41 expressionSequence: expression
+   42                   | expressionSequence ',' expression
+
+   43 assignment: IDENTIFIER selector ":=" expression
+
+   44 expression: simpleExpression
+   45           | simpleExpression '=' simpleExpression
+   46           | simpleExpression '#' simpleExpression
+   47           | simpleExpression '<' simpleExpression
+   48           | simpleExpression '>' simpleExpression
+   49           | simpleExpression LE simpleExpression
+   50           | simpleExpression GE simpleExpression
+
+   51 simpleExpression: term
+
+   52 term: factor
+   53     | term '+' term
+   54     | term '-' term
+   55     | term OR term
+   56     | '+' factor
+   57     | '-' factor
+   58     | factor '*' factor
+   59     | factor DIV factor
+   60     | factor MOD factor
+   61     | factor '&' factor
+   62     | factor '/' factor
+
+   63 factor: IDENTIFIER selector
+   64       | INTEGER
+   65       | DOUBLE
+   66       | BOOLEAN
+   67       | STRING
+   68       | '(' expression ')'
+   69       | '~' factor
+
+   70 selector: %empty
+   71         | selector '.' IDENTIFIER
+   72         | selector '[' expression ']'
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+'#' (35) 46
+'&' (38) 61
+'(' (40) 14 40 68
+')' (41) 14 40 68
+'*' (42) 58
+'+' (43) 53 56
+',' (44) 28 42
+'-' (45) 54 57
+'.' (46) 1 3 71
+'/' (47) 62
+':' (58) 7 17 18 25
+';' (59) 1 3 5 6 7 8 9 16 24 30
+'<' (60) 47
+'=' (61) 5 6 45
+'>' (62) 48
+'[' (91) 72
+']' (93) 72
+'^' (94)
+'~' (126) 69
+error (256)
+MODULE (258) 1 3
+PROCEDURE (259) 12 13
+BEGIN_ (260) 3 11
+END (261) 1 3 10 11 22 35 36 37
+CONST (262) 5
+TYPE (263) 6
+VAR (264) 7 18
+RECORD (265) 22
+ARRAY (266) 26
+OF (267) 26
+WHILE (268) 35
+DO (269) 35
+ELSE (270) 37
+IF (271) 36 37
+ELSIF (272)
+THEN (273) 36 37
+IDENTIFIER (274) 1 3 5 6 9 12 13 19 27 28 38 39 43 63 71
+INTEGER (275) 64
+DOUBLE (276) 65
+BOOLEAN (277) 66
+STRING (278) 67
+":=" (279) 43
+NE (280)
+LE (281) 49
+GE (282) 50
+OR (283) 55
+DIV (284) 59
+MOD (285) 60
+
+
+Nonterminals, with rules where they appear
+
+$accept (50)
+    on left: 0
+module (51)
+    on left: 1 3, on right: 0
+$@1 (52)
+    on left: 2, on right: 3
+declarations (53)
+    on left: 4 5 6 7 8, on right: 1 3 5 6 7 8 10 11
+procedureDeclaration (54)
+    on left: 9, on right: 8
+procedureBody (55)
+    on left: 10 11, on right: 9
+procedureHeading (56)
+    on left: 12 13, on right: 9
+formalParameters (57)
+    on left: 14, on right: 13
+FPSectionSequence (58)
+    on left: 15 16, on right: 14 16
+FPSection (59)
+    on left: 17 18, on right: 15 16
+type (60)
+    on left: 19 20 21, on right: 6 7 17 18 25 26
+recordType (61)
+    on left: 22, on right: 21
+fieldListSequence (62)
+    on left: 23 24, on right: 22 24
+fieldList (63)
+    on left: 25, on right: 23 24
+arrayType (64)
+    on left: 26, on right: 20
+identifierList (65)
+    on left: 27 28, on right: 7 17 18 25 28
+statementSequence (66)
+    on left: 29 30, on right: 3 11 30 35 36 37
+statement (67)
+    on left: 31 32 33 34, on right: 29 30
+whileStatement (68)
+    on left: 35, on right: 34
+ifStatement (69)
+    on left: 36 37, on right: 33
+procedureCall (70)
+    on left: 38 39, on right: 32
+actualParameters (71)
+    on left: 40, on right: 39
+expressionSequence (72)
+    on left: 41 42, on right: 40 42
+assignment (73)
+    on left: 43, on right: 31
+expression (74)
+    on left: 44 45 46 47 48 49 50, on right: 5 26 35 36 37 41 42 43
+    68 72
+simpleExpression (75)
+    on left: 51, on right: 44 45 46 47 48 49 50
+term (76)
+    on left: 52 53 54 55 56 57 58 59 60 61 62, on right: 51 53 54 55
+factor (77)
+    on left: 63 64 65 66 67 68 69, on right: 52 56 57 58 59 60 61 62
+    69
+selector (78)
+    on left: 70 71 72, on right: 43 63 71 72
+
+
+State 0
+
+    0 $accept: . module $end
+
+    MODULE  shift, and go to state 1
+
+    module  go to state 2
+
+
+State 1
+
+    1 module: MODULE . IDENTIFIER ';' declarations END IDENTIFIER '.'
+    3       | MODULE . IDENTIFIER ';' declarations BEGIN_ $@1 statementSequence END IDENTIFIER '.'
+
+    IDENTIFIER  shift, and go to state 3
+
+
+State 2
+
+    0 $accept: module . $end
+
+    $end  shift, and go to state 4
+
+
+State 3
+
+    1 module: MODULE IDENTIFIER . ';' declarations END IDENTIFIER '.'
+    3       | MODULE IDENTIFIER . ';' declarations BEGIN_ $@1 statementSequence END IDENTIFIER '.'
+
+    ';'  shift, and go to state 5
+
+
+State 4
+
+    0 $accept: module $end .
+
+    $default  accept
+
+
+State 5
+
+    1 module: MODULE IDENTIFIER ';' . declarations END IDENTIFIER '.'
+    3       | MODULE IDENTIFIER ';' . declarations BEGIN_ $@1 statementSequence END IDENTIFIER '.'
+
+    $default  reduce using rule 4 (declarations)
+
+    declarations  go to state 6
+
+
+State 6
+
+    1 module: MODULE IDENTIFIER ';' declarations . END IDENTIFIER '.'
+    3       | MODULE IDENTIFIER ';' declarations . BEGIN_ $@1 statementSequence END IDENTIFIER '.'
+    5 declarations: declarations . CONST IDENTIFIER '=' expression ';'
+    6             | declarations . TYPE IDENTIFIER '=' type ';'
+    7             | declarations . VAR identifierList ':' type ';'
+    8             | declarations . procedureDeclaration ';'
+
+    PROCEDURE  shift, and go to state 7
+    BEGIN_     shift, and go to state 8
+    END        shift, and go to state 9
+    CONST      shift, and go to state 10
+    TYPE       shift, and go to state 11
+    VAR        shift, and go to state 12
+
+    procedureDeclaration  go to state 13
+    procedureHeading      go to state 14
+
+
+State 7
+
+   12 procedureHeading: PROCEDURE . IDENTIFIER
+   13                 | PROCEDURE . IDENTIFIER formalParameters
+
+    IDENTIFIER  shift, and go to state 15
+
+
+State 8
+
+    3 module: MODULE IDENTIFIER ';' declarations BEGIN_ . $@1 statementSequence END IDENTIFIER '.'
+
+    $default  reduce using rule 2 ($@1)
+
+    $@1  go to state 16
+
+
+State 9
+
+    1 module: MODULE IDENTIFIER ';' declarations END . IDENTIFIER '.'
+
+    IDENTIFIER  shift, and go to state 17
+
+
+State 10
+
+    5 declarations: declarations CONST . IDENTIFIER '=' expression ';'
+
+    IDENTIFIER  shift, and go to state 18
+
+
+State 11
+
+    6 declarations: declarations TYPE . IDENTIFIER '=' type ';'
+
+    IDENTIFIER  shift, and go to state 19
+
+
+State 12
+
+    7 declarations: declarations VAR . identifierList ':' type ';'
+
+    IDENTIFIER  shift, and go to state 20
+
+    identifierList  go to state 21
+
+
+State 13
+
+    8 declarations: declarations procedureDeclaration . ';'
+
+    ';'  shift, and go to state 22
+
+
+State 14
+
+    9 procedureDeclaration: procedureHeading . ';' procedureBody IDENTIFIER
+
+    ';'  shift, and go to state 23
+
+
+State 15
+
+   12 procedureHeading: PROCEDURE IDENTIFIER .
+   13                 | PROCEDURE IDENTIFIER . formalParameters
+
+    '('  shift, and go to state 24
+
+    $default  reduce using rule 12 (procedureHeading)
+
+    formalParameters  go to state 25
+
+
+State 16
+
+    3 module: MODULE IDENTIFIER ';' declarations BEGIN_ $@1 . statementSequence END IDENTIFIER '.'
+
+    WHILE       shift, and go to state 26
+    IF          shift, and go to state 27
+    IDENTIFIER  shift, and go to state 28
+
+    statementSequence  go to state 29
+    statement          go to state 30
+    whileStatement     go to state 31
+    ifStatement        go to state 32
+    procedureCall      go to state 33
+    assignment         go to state 34
+
+
+State 17
+
+    1 module: MODULE IDENTIFIER ';' declarations END IDENTIFIER . '.'
+
+    '.'  shift, and go to state 35
+
+
+State 18
+
+    5 declarations: declarations CONST IDENTIFIER . '=' expression ';'
+
+    '='  shift, and go to state 36
+
+
+State 19
+
+    6 declarations: declarations TYPE IDENTIFIER . '=' type ';'
+
+    '='  shift, and go to state 37
+
+
+State 20
+
+   27 identifierList: IDENTIFIER .
+
+    $default  reduce using rule 27 (identifierList)
+
+
+State 21
+
+    7 declarations: declarations VAR identifierList . ':' type ';'
+   28 identifierList: identifierList . ',' IDENTIFIER
+
+    ':'  shift, and go to state 38
+    ','  shift, and go to state 39
+
+
+State 22
+
+    8 declarations: declarations procedureDeclaration ';' .
+
+    $default  reduce using rule 8 (declarations)
+
+
+State 23
+
+    9 procedureDeclaration: procedureHeading ';' . procedureBody IDENTIFIER
+
+    $default  reduce using rule 4 (declarations)
+
+    declarations   go to state 40
+    procedureBody  go to state 41
+
+
+State 24
+
+   14 formalParameters: '(' . FPSectionSequence ')'
+
+    VAR         shift, and go to state 42
+    IDENTIFIER  shift, and go to state 20
+
+    FPSectionSequence  go to state 43
+    FPSection          go to state 44
+    identifierList     go to state 45
+
+
+State 25
+
+   13 procedureHeading: PROCEDURE IDENTIFIER formalParameters .
+
+    $default  reduce using rule 13 (procedureHeading)
+
+
+State 26
+
+   35 whileStatement: WHILE . expression DO statementSequence END
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 55
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 27
+
+   36 ifStatement: IF . expression THEN statementSequence END
+   37            | IF . expression THEN statementSequence ELSE statementSequence END
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 59
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 28
+
+   38 procedureCall: IDENTIFIER .
+   39              | IDENTIFIER . actualParameters
+   43 assignment: IDENTIFIER . selector ":=" expression
+
+    '('  shift, and go to state 60
+
+    ":="      reduce using rule 70 (selector)
+    '.'       reduce using rule 70 (selector)
+    '['       reduce using rule 70 (selector)
+    $default  reduce using rule 38 (procedureCall)
+
+    actualParameters  go to state 61
+    selector          go to state 62
+
+
+State 29
+
+    3 module: MODULE IDENTIFIER ';' declarations BEGIN_ $@1 statementSequence . END IDENTIFIER '.'
+   30 statementSequence: statementSequence . ';' statement
+
+    END  shift, and go to state 63
+    ';'  shift, and go to state 64
+
+
+State 30
+
+   29 statementSequence: statement .
+
+    $default  reduce using rule 29 (statementSequence)
+
+
+State 31
+
+   34 statement: whileStatement .
+
+    $default  reduce using rule 34 (statement)
+
+
+State 32
+
+   33 statement: ifStatement .
+
+    $default  reduce using rule 33 (statement)
+
+
+State 33
+
+   32 statement: procedureCall .
+
+    $default  reduce using rule 32 (statement)
+
+
+State 34
+
+   31 statement: assignment .
+
+    $default  reduce using rule 31 (statement)
+
+
+State 35
+
+    1 module: MODULE IDENTIFIER ';' declarations END IDENTIFIER '.' .
+
+    $default  reduce using rule 1 (module)
+
+
+State 36
+
+    5 declarations: declarations CONST IDENTIFIER '=' . expression ';'
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 65
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 37
+
+    6 declarations: declarations TYPE IDENTIFIER '=' . type ';'
+
+    RECORD      shift, and go to state 66
+    ARRAY       shift, and go to state 67
+    IDENTIFIER  shift, and go to state 68
+
+    type        go to state 69
+    recordType  go to state 70
+    arrayType   go to state 71
+
+
+State 38
+
+    7 declarations: declarations VAR identifierList ':' . type ';'
+
+    RECORD      shift, and go to state 66
+    ARRAY       shift, and go to state 67
+    IDENTIFIER  shift, and go to state 68
+
+    type        go to state 72
+    recordType  go to state 70
+    arrayType   go to state 71
+
+
+State 39
+
+   28 identifierList: identifierList ',' . IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 73
+
+
+State 40
+
+    5 declarations: declarations . CONST IDENTIFIER '=' expression ';'
+    6             | declarations . TYPE IDENTIFIER '=' type ';'
+    7             | declarations . VAR identifierList ':' type ';'
+    8             | declarations . procedureDeclaration ';'
+   10 procedureBody: declarations . END
+   11              | declarations . BEGIN_ statementSequence END
+
+    PROCEDURE  shift, and go to state 7
+    BEGIN_     shift, and go to state 74
+    END        shift, and go to state 75
+    CONST      shift, and go to state 10
+    TYPE       shift, and go to state 11
+    VAR        shift, and go to state 12
+
+    procedureDeclaration  go to state 13
+    procedureHeading      go to state 14
+
+
+State 41
+
+    9 procedureDeclaration: procedureHeading ';' procedureBody . IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 76
+
+
+State 42
+
+   18 FPSection: VAR . identifierList ':' type
+
+    IDENTIFIER  shift, and go to state 20
+
+    identifierList  go to state 77
+
+
+State 43
+
+   14 formalParameters: '(' FPSectionSequence . ')'
+   16 FPSectionSequence: FPSectionSequence . ';' FPSection
+
+    ';'  shift, and go to state 78
+    ')'  shift, and go to state 79
+
+
+State 44
+
+   15 FPSectionSequence: FPSection .
+
+    $default  reduce using rule 15 (FPSectionSequence)
+
+
+State 45
+
+   17 FPSection: identifierList . ':' type
+   28 identifierList: identifierList . ',' IDENTIFIER
+
+    ':'  shift, and go to state 80
+    ','  shift, and go to state 39
+
+
+State 46
+
+   63 factor: IDENTIFIER . selector
+
+    $default  reduce using rule 70 (selector)
+
+    selector  go to state 81
+
+
+State 47
+
+   64 factor: INTEGER .
+
+    $default  reduce using rule 64 (factor)
+
+
+State 48
+
+   65 factor: DOUBLE .
+
+    $default  reduce using rule 65 (factor)
+
+
+State 49
+
+   66 factor: BOOLEAN .
+
+    $default  reduce using rule 66 (factor)
+
+
+State 50
+
+   67 factor: STRING .
+
+    $default  reduce using rule 67 (factor)
+
+
+State 51
+
+   57 term: '-' . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 82
+
+
+State 52
+
+   56 term: '+' . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 83
+
+
+State 53
+
+   68 factor: '(' . expression ')'
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 84
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 54
+
+   69 factor: '~' . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 85
+
+
+State 55
+
+   35 whileStatement: WHILE expression . DO statementSequence END
+
+    DO  shift, and go to state 86
+
+
+State 56
+
+   44 expression: simpleExpression .
+   45           | simpleExpression . '=' simpleExpression
+   46           | simpleExpression . '#' simpleExpression
+   47           | simpleExpression . '<' simpleExpression
+   48           | simpleExpression . '>' simpleExpression
+   49           | simpleExpression . LE simpleExpression
+   50           | simpleExpression . GE simpleExpression
+
+    '<'  shift, and go to state 87
+    '>'  shift, and go to state 88
+    '='  shift, and go to state 89
+    LE   shift, and go to state 90
+    GE   shift, and go to state 91
+    '#'  shift, and go to state 92
+
+    $default  reduce using rule 44 (expression)
+
+
+State 57
+
+   51 simpleExpression: term .
+   53 term: term . '+' term
+   54     | term . '-' term
+   55     | term . OR term
+
+    '-'  shift, and go to state 93
+    '+'  shift, and go to state 94
+    OR   shift, and go to state 95
+
+    $default  reduce using rule 51 (simpleExpression)
+
+
+State 58
+
+   52 term: factor .
+   58     | factor . '*' factor
+   59     | factor . DIV factor
+   60     | factor . MOD factor
+   61     | factor . '&' factor
+   62     | factor . '/' factor
+
+    '&'  shift, and go to state 96
+    DIV  shift, and go to state 97
+    MOD  shift, and go to state 98
+    '*'  shift, and go to state 99
+    '/'  shift, and go to state 100
+
+    $default  reduce using rule 52 (term)
+
+
+State 59
+
+   36 ifStatement: IF expression . THEN statementSequence END
+   37            | IF expression . THEN statementSequence ELSE statementSequence END
+
+    THEN  shift, and go to state 101
+
+
+State 60
+
+   40 actualParameters: '(' . expressionSequence ')'
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expressionSequence  go to state 102
+    expression          go to state 103
+    simpleExpression    go to state 56
+    term                go to state 57
+    factor              go to state 58
+
+
+State 61
+
+   39 procedureCall: IDENTIFIER actualParameters .
+
+    $default  reduce using rule 39 (procedureCall)
+
+
+State 62
+
+   43 assignment: IDENTIFIER selector . ":=" expression
+   71 selector: selector . '.' IDENTIFIER
+   72         | selector . '[' expression ']'
+
+    ":="  shift, and go to state 104
+    '.'   shift, and go to state 105
+    '['   shift, and go to state 106
+
+
+State 63
+
+    3 module: MODULE IDENTIFIER ';' declarations BEGIN_ $@1 statementSequence END . IDENTIFIER '.'
+
+    IDENTIFIER  shift, and go to state 107
+
+
+State 64
+
+   30 statementSequence: statementSequence ';' . statement
+
+    WHILE       shift, and go to state 26
+    IF          shift, and go to state 27
+    IDENTIFIER  shift, and go to state 28
+
+    statement       go to state 108
+    whileStatement  go to state 31
+    ifStatement     go to state 32
+    procedureCall   go to state 33
+    assignment      go to state 34
+
+
+State 65
+
+    5 declarations: declarations CONST IDENTIFIER '=' expression . ';'
+
+    ';'  shift, and go to state 109
+
+
+State 66
+
+   22 recordType: RECORD . fieldListSequence END
+
+    IDENTIFIER  shift, and go to state 20
+
+    fieldListSequence  go to state 110
+    fieldList          go to state 111
+    identifierList     go to state 112
+
+
+State 67
+
+   26 arrayType: ARRAY . expression OF type
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 113
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 68
+
+   19 type: IDENTIFIER .
+
+    $default  reduce using rule 19 (type)
+
+
+State 69
+
+    6 declarations: declarations TYPE IDENTIFIER '=' type . ';'
+
+    ';'  shift, and go to state 114
+
+
+State 70
+
+   21 type: recordType .
+
+    $default  reduce using rule 21 (type)
+
+
+State 71
+
+   20 type: arrayType .
+
+    $default  reduce using rule 20 (type)
+
+
+State 72
+
+    7 declarations: declarations VAR identifierList ':' type . ';'
+
+    ';'  shift, and go to state 115
+
+
+State 73
+
+   28 identifierList: identifierList ',' IDENTIFIER .
+
+    $default  reduce using rule 28 (identifierList)
+
+
+State 74
+
+   11 procedureBody: declarations BEGIN_ . statementSequence END
+
+    WHILE       shift, and go to state 26
+    IF          shift, and go to state 27
+    IDENTIFIER  shift, and go to state 28
+
+    statementSequence  go to state 116
+    statement          go to state 30
+    whileStatement     go to state 31
+    ifStatement        go to state 32
+    procedureCall      go to state 33
+    assignment         go to state 34
+
+
+State 75
+
+   10 procedureBody: declarations END .
+
+    $default  reduce using rule 10 (procedureBody)
+
+
+State 76
+
+    9 procedureDeclaration: procedureHeading ';' procedureBody IDENTIFIER .
+
+    $default  reduce using rule 9 (procedureDeclaration)
+
+
+State 77
+
+   18 FPSection: VAR identifierList . ':' type
+   28 identifierList: identifierList . ',' IDENTIFIER
+
+    ':'  shift, and go to state 117
+    ','  shift, and go to state 39
+
+
+State 78
+
+   16 FPSectionSequence: FPSectionSequence ';' . FPSection
+
+    VAR         shift, and go to state 42
+    IDENTIFIER  shift, and go to state 20
+
+    FPSection       go to state 118
+    identifierList  go to state 45
+
+
+State 79
+
+   14 formalParameters: '(' FPSectionSequence ')' .
+
+    $default  reduce using rule 14 (formalParameters)
+
+
+State 80
+
+   17 FPSection: identifierList ':' . type
+
+    RECORD      shift, and go to state 66
+    ARRAY       shift, and go to state 67
+    IDENTIFIER  shift, and go to state 68
+
+    type        go to state 119
+    recordType  go to state 70
+    arrayType   go to state 71
+
+
+State 81
+
+   63 factor: IDENTIFIER selector .
+   71 selector: selector . '.' IDENTIFIER
+   72         | selector . '[' expression ']'
+
+    '.'  shift, and go to state 105
+    '['  shift, and go to state 106
+
+    $default  reduce using rule 63 (factor)
+
+
+State 82
+
+   57 term: '-' factor .
+
+    $default  reduce using rule 57 (term)
+
+
+State 83
+
+   56 term: '+' factor .
+
+    $default  reduce using rule 56 (term)
+
+
+State 84
+
+   68 factor: '(' expression . ')'
+
+    ')'  shift, and go to state 120
+
+
+State 85
+
+   69 factor: '~' factor .
+
+    $default  reduce using rule 69 (factor)
+
+
+State 86
+
+   35 whileStatement: WHILE expression DO . statementSequence END
+
+    WHILE       shift, and go to state 26
+    IF          shift, and go to state 27
+    IDENTIFIER  shift, and go to state 28
+
+    statementSequence  go to state 121
+    statement          go to state 30
+    whileStatement     go to state 31
+    ifStatement        go to state 32
+    procedureCall      go to state 33
+    assignment         go to state 34
+
+
+State 87
+
+   47 expression: simpleExpression '<' . simpleExpression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    simpleExpression  go to state 122
+    term              go to state 57
+    factor            go to state 58
+
+
+State 88
+
+   48 expression: simpleExpression '>' . simpleExpression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    simpleExpression  go to state 123
+    term              go to state 57
+    factor            go to state 58
+
+
+State 89
+
+   45 expression: simpleExpression '=' . simpleExpression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    simpleExpression  go to state 124
+    term              go to state 57
+    factor            go to state 58
+
+
+State 90
+
+   49 expression: simpleExpression LE . simpleExpression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    simpleExpression  go to state 125
+    term              go to state 57
+    factor            go to state 58
+
+
+State 91
+
+   50 expression: simpleExpression GE . simpleExpression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    simpleExpression  go to state 126
+    term              go to state 57
+    factor            go to state 58
+
+
+State 92
+
+   46 expression: simpleExpression '#' . simpleExpression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    simpleExpression  go to state 127
+    term              go to state 57
+    factor            go to state 58
+
+
+State 93
+
+   54 term: term '-' . term
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    term    go to state 128
+    factor  go to state 58
+
+
+State 94
+
+   53 term: term '+' . term
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    term    go to state 129
+    factor  go to state 58
+
+
+State 95
+
+   55 term: term OR . term
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    term    go to state 130
+    factor  go to state 58
+
+
+State 96
+
+   61 term: factor '&' . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 131
+
+
+State 97
+
+   59 term: factor DIV . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 132
+
+
+State 98
+
+   60 term: factor MOD . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 133
+
+
+State 99
+
+   58 term: factor '*' . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 134
+
+
+State 100
+
+   62 term: factor '/' . factor
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    factor  go to state 135
+
+
+State 101
+
+   36 ifStatement: IF expression THEN . statementSequence END
+   37            | IF expression THEN . statementSequence ELSE statementSequence END
+
+    WHILE       shift, and go to state 26
+    IF          shift, and go to state 27
+    IDENTIFIER  shift, and go to state 28
+
+    statementSequence  go to state 136
+    statement          go to state 30
+    whileStatement     go to state 31
+    ifStatement        go to state 32
+    procedureCall      go to state 33
+    assignment         go to state 34
+
+
+State 102
+
+   40 actualParameters: '(' expressionSequence . ')'
+   42 expressionSequence: expressionSequence . ',' expression
+
+    ')'  shift, and go to state 137
+    ','  shift, and go to state 138
+
+
+State 103
+
+   41 expressionSequence: expression .
+
+    $default  reduce using rule 41 (expressionSequence)
+
+
+State 104
+
+   43 assignment: IDENTIFIER selector ":=" . expression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 139
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 105
+
+   71 selector: selector '.' . IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 140
+
+
+State 106
+
+   72 selector: selector '[' . expression ']'
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 141
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 107
+
+    3 module: MODULE IDENTIFIER ';' declarations BEGIN_ $@1 statementSequence END IDENTIFIER . '.'
+
+    '.'  shift, and go to state 142
+
+
+State 108
+
+   30 statementSequence: statementSequence ';' statement .
+
+    $default  reduce using rule 30 (statementSequence)
+
+
+State 109
+
+    5 declarations: declarations CONST IDENTIFIER '=' expression ';' .
+
+    $default  reduce using rule 5 (declarations)
+
+
+State 110
+
+   22 recordType: RECORD fieldListSequence . END
+   24 fieldListSequence: fieldListSequence . ';' fieldList
+
+    END  shift, and go to state 143
+    ';'  shift, and go to state 144
+
+
+State 111
+
+   23 fieldListSequence: fieldList .
+
+    $default  reduce using rule 23 (fieldListSequence)
+
+
+State 112
+
+   25 fieldList: identifierList . ':' type
+   28 identifierList: identifierList . ',' IDENTIFIER
+
+    ':'  shift, and go to state 145
+    ','  shift, and go to state 39
+
+
+State 113
+
+   26 arrayType: ARRAY expression . OF type
+
+    OF  shift, and go to state 146
+
+
+State 114
+
+    6 declarations: declarations TYPE IDENTIFIER '=' type ';' .
+
+    $default  reduce using rule 6 (declarations)
+
+
+State 115
+
+    7 declarations: declarations VAR identifierList ':' type ';' .
+
+    $default  reduce using rule 7 (declarations)
+
+
+State 116
+
+   11 procedureBody: declarations BEGIN_ statementSequence . END
+   30 statementSequence: statementSequence . ';' statement
+
+    END  shift, and go to state 147
+    ';'  shift, and go to state 64
+
+
+State 117
+
+   18 FPSection: VAR identifierList ':' . type
+
+    RECORD      shift, and go to state 66
+    ARRAY       shift, and go to state 67
+    IDENTIFIER  shift, and go to state 68
+
+    type        go to state 148
+    recordType  go to state 70
+    arrayType   go to state 71
+
+
+State 118
+
+   16 FPSectionSequence: FPSectionSequence ';' FPSection .
+
+    $default  reduce using rule 16 (FPSectionSequence)
+
+
+State 119
+
+   17 FPSection: identifierList ':' type .
+
+    $default  reduce using rule 17 (FPSection)
+
+
+State 120
+
+   68 factor: '(' expression ')' .
+
+    $default  reduce using rule 68 (factor)
+
+
+State 121
+
+   30 statementSequence: statementSequence . ';' statement
+   35 whileStatement: WHILE expression DO statementSequence . END
+
+    END  shift, and go to state 149
+    ';'  shift, and go to state 64
+
+
+State 122
+
+   47 expression: simpleExpression '<' simpleExpression .
+
+    $default  reduce using rule 47 (expression)
+
+
+State 123
+
+   48 expression: simpleExpression '>' simpleExpression .
+
+    $default  reduce using rule 48 (expression)
+
+
+State 124
+
+   45 expression: simpleExpression '=' simpleExpression .
+
+    $default  reduce using rule 45 (expression)
+
+
+State 125
+
+   49 expression: simpleExpression LE simpleExpression .
+
+    $default  reduce using rule 49 (expression)
+
+
+State 126
+
+   50 expression: simpleExpression GE simpleExpression .
+
+    $default  reduce using rule 50 (expression)
+
+
+State 127
+
+   46 expression: simpleExpression '#' simpleExpression .
+
+    $default  reduce using rule 46 (expression)
+
+
+State 128
+
+   53 term: term . '+' term
+   54     | term . '-' term
+   54     | term '-' term .
+   55     | term . OR term
+
+    $default  reduce using rule 54 (term)
+
+
+State 129
+
+   53 term: term . '+' term
+   53     | term '+' term .
+   54     | term . '-' term
+   55     | term . OR term
+
+    $default  reduce using rule 53 (term)
+
+
+State 130
+
+   53 term: term . '+' term
+   54     | term . '-' term
+   55     | term . OR term
+   55     | term OR term .
+
+    $default  reduce using rule 55 (term)
+
+
+State 131
+
+   61 term: factor '&' factor .
+
+    $default  reduce using rule 61 (term)
+
+
+State 132
+
+   59 term: factor DIV factor .
+
+    $default  reduce using rule 59 (term)
+
+
+State 133
+
+   60 term: factor MOD factor .
+
+    $default  reduce using rule 60 (term)
+
+
+State 134
+
+   58 term: factor '*' factor .
+
+    $default  reduce using rule 58 (term)
+
+
+State 135
+
+   62 term: factor '/' factor .
+
+    $default  reduce using rule 62 (term)
+
+
+State 136
+
+   30 statementSequence: statementSequence . ';' statement
+   36 ifStatement: IF expression THEN statementSequence . END
+   37            | IF expression THEN statementSequence . ELSE statementSequence END
+
+    END   shift, and go to state 150
+    ELSE  shift, and go to state 151
+    ';'   shift, and go to state 64
+
+
+State 137
+
+   40 actualParameters: '(' expressionSequence ')' .
+
+    $default  reduce using rule 40 (actualParameters)
+
+
+State 138
+
+   42 expressionSequence: expressionSequence ',' . expression
+
+    IDENTIFIER  shift, and go to state 46
+    INTEGER     shift, and go to state 47
+    DOUBLE      shift, and go to state 48
+    BOOLEAN     shift, and go to state 49
+    STRING      shift, and go to state 50
+    '-'         shift, and go to state 51
+    '+'         shift, and go to state 52
+    '('         shift, and go to state 53
+    '~'         shift, and go to state 54
+
+    expression        go to state 152
+    simpleExpression  go to state 56
+    term              go to state 57
+    factor            go to state 58
+
+
+State 139
+
+   43 assignment: IDENTIFIER selector ":=" expression .
+
+    $default  reduce using rule 43 (assignment)
+
+
+State 140
+
+   71 selector: selector '.' IDENTIFIER .
+
+    $default  reduce using rule 71 (selector)
+
+
+State 141
+
+   72 selector: selector '[' expression . ']'
+
+    ']'  shift, and go to state 153
+
+
+State 142
+
+    3 module: MODULE IDENTIFIER ';' declarations BEGIN_ $@1 statementSequence END IDENTIFIER '.' .
+
+    $default  reduce using rule 3 (module)
+
+
+State 143
+
+   22 recordType: RECORD fieldListSequence END .
+
+    $default  reduce using rule 22 (recordType)
+
+
+State 144
+
+   24 fieldListSequence: fieldListSequence ';' . fieldList
+
+    IDENTIFIER  shift, and go to state 20
+
+    fieldList       go to state 154
+    identifierList  go to state 112
+
+
+State 145
+
+   25 fieldList: identifierList ':' . type
+
+    RECORD      shift, and go to state 66
+    ARRAY       shift, and go to state 67
+    IDENTIFIER  shift, and go to state 68
+
+    type        go to state 155
+    recordType  go to state 70
+    arrayType   go to state 71
+
+
+State 146
+
+   26 arrayType: ARRAY expression OF . type
+
+    RECORD      shift, and go to state 66
+    ARRAY       shift, and go to state 67
+    IDENTIFIER  shift, and go to state 68
+
+    type        go to state 156
+    recordType  go to state 70
+    arrayType   go to state 71
+
+
+State 147
+
+   11 procedureBody: declarations BEGIN_ statementSequence END .
+
+    $default  reduce using rule 11 (procedureBody)
+
+
+State 148
+
+   18 FPSection: VAR identifierList ':' type .
+
+    $default  reduce using rule 18 (FPSection)
+
+
+State 149
+
+   35 whileStatement: WHILE expression DO statementSequence END .
+
+    $default  reduce using rule 35 (whileStatement)
+
+
+State 150
+
+   36 ifStatement: IF expression THEN statementSequence END .
+
+    $default  reduce using rule 36 (ifStatement)
+
+
+State 151
+
+   37 ifStatement: IF expression THEN statementSequence ELSE . statementSequence END
+
+    WHILE       shift, and go to state 26
+    IF          shift, and go to state 27
+    IDENTIFIER  shift, and go to state 28
+
+    statementSequence  go to state 157
+    statement          go to state 30
+    whileStatement     go to state 31
+    ifStatement        go to state 32
+    procedureCall      go to state 33
+    assignment         go to state 34
+
+
+State 152
+
+   42 expressionSequence: expressionSequence ',' expression .
+
+    $default  reduce using rule 42 (expressionSequence)
+
+
+State 153
+
+   72 selector: selector '[' expression ']' .
+
+    $default  reduce using rule 72 (selector)
+
+
+State 154
+
+   24 fieldListSequence: fieldListSequence ';' fieldList .
+
+    $default  reduce using rule 24 (fieldListSequence)
+
+
+State 155
+
+   25 fieldList: identifierList ':' type .
+
+    $default  reduce using rule 25 (fieldList)
+
+
+State 156
+
+   26 arrayType: ARRAY expression OF type .
+
+    $default  reduce using rule 26 (arrayType)
+
+
+State 157
+
+   30 statementSequence: statementSequence . ';' statement
+   37 ifStatement: IF expression THEN statementSequence ELSE statementSequence . END
+
+    END  shift, and go to state 158
+    ';'  shift, and go to state 64
+
+
+State 158
+
+   37 ifStatement: IF expression THEN statementSequence ELSE statementSequence END .
+
+    $default  reduce using rule 37 (ifStatement)

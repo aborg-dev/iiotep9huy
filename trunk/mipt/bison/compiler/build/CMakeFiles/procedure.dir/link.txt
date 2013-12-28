@@ -1,0 +1,2 @@
+/usr/bin/ar cr libprocedure.a  CMakeFiles/procedure.dir/Procedure.cpp.o
+/usr/bin/ranlib libprocedure.a

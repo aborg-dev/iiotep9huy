@@ -1,0 +1,383 @@
+%{
+  #include <FlexLexer.h>
+
+  #include "SymbolTable.hpp"
+  #include "Selector.hpp"
+  #include "Exceptions.hpp"
+
+  #include <iostream>
+  #include <cstdio>
+  #include <cstdlib>
+  #include <string>
+
+  #define YYDEBUG 1
+
+  SymbolTable globalSymbolTable;
+
+  void integerBinaryOperatorArgumentsConvert(VariableType* first_arg, VariableType* second_arg,
+                                            int& first_arg_converted, int& second_arg_converted, 
+                                            std::string operator_)
+  {
+    if (!(first_arg->isInteger()))
+    {
+      throw wrong_type("First argument of " + operator_ + " operator has wrong type");
+    }
+    if (!(second_arg->isInteger()))
+    {
+      throw wrong_type("Second argument of " + operator_ + " operator has wrong type");
+    }
+
+    first_arg_converted = getValue<int> (first_arg);
+    second_arg_converted = getValue<int> (second_arg);
+  }
+
+  void integerUnaryOperatorArgumentsConvert(VariableType* first_arg,
+                                            int& first_arg_converted, 
+                                            std::string operator_)
+  {
+    if (!(first_arg->isInteger()))
+    {
+      throw wrong_type("First argument of " + operator_ + " operator has wrong type");
+    }
+
+    first_arg_converted = getValue<int> (first_arg);
+  }
+
+  int yylex();
+  void yyerror(std::string);
+%}
+
+%union {
+  std::string* id;
+  VariableType* variableType;
+  Integer* integer;
+  String* string;
+  Boolean* boolean;
+  Selector* selector;
+}
+
+%start module
+
+%token MODULE PROCEDURE BEGIN_ END CONST TYPE VAR RECORD ARRAY OF WHILE DO ELSE IF ELSIF THEN
+%token<id> IDENTIFIER
+%token<integer> INTEGER
+
+%type <variableType> factor
+%type <variableType> term
+%type <variableType> expression
+%type <variableType> simpleExpression
+%type <selector> selector
+
+
+%token ASSGNOP ":="
+%left '<' '>' '=' NE LE GE
+%left '-' '+' OR
+%left DIV MOD
+%right '^'
+
+%%
+
+module : 
+  MODULE IDENTIFIER ';' 
+    declarations 
+  END IDENTIFIER '.'
+
+  | MODULE IDENTIFIER ';' 
+      declarations
+      BEGIN_
+        statementSequence
+    END IDENTIFIER '.'
+;
+
+declarations : 
+  /* empty */
+  | CONST IDENTIFIER '=' expression ';'
+  | TYPE  IDENTIFIER '=' type ';'
+  | VAR   identifierList ':' type ';'
+  | procedureDeclaration ';'
+;
+
+procedureDeclaration :
+  procedureHeading ';'
+  procedureBody IDENTIFIER
+;
+
+procedureBody :
+    declarations 
+    END
+  | declarations 
+    BEGIN_ 
+      statementSequence 
+    END
+;
+
+procedureHeading :
+  PROCEDURE IDENTIFIER 
+  | PROCEDURE IDENTIFIER formalParameters
+;
+
+formalParameters :
+  '(' FPSectionSequence ')'
+;
+
+FPSectionSequence :
+  FPSection
+  | FPSectionSequence ';' FPSection
+;
+
+FPSection : 
+  identifierList ':' type
+  | VAR identifierList ':' type
+;
+
+type :
+  IDENTIFIER
+  | arrayType
+  | recordType
+;
+
+recordType :
+  RECORD fieldListSequence END
+;
+
+fieldListSequence :
+  fieldList
+  | fieldListSequence ';' fieldList
+;
+
+fieldList :
+  identifierList ':' type
+;
+
+arrayType :
+  ARRAY expression OF type
+;
+
+identifierList :
+  IDENTIFIER
+  | identifierList ',' IDENTIFIER
+;
+
+statementSequence :
+  statement
+  | statementSequence ';' statement
+;
+
+statement :
+  assignment
+  | procedureCall
+  | ifStatement
+  | whileStatement
+;
+
+whileStatement :
+  WHILE expression DO statementSequence END
+;
+
+/*TODO*/
+ifStatement :
+  IF expression 
+    THEN 
+      statementSequence 
+    END
+  | IF expression 
+      THEN 
+        statementSequence 
+      ELSE
+        statementSequence
+      END
+;
+
+procedureCall :
+  IDENTIFIER
+  | IDENTIFIER actualParameters
+;
+
+actualParameters :
+  '(' expressionSequence ')'
+;
+
+expressionSequence :
+  expression
+  | expressionSequence ',' expression
+;
+
+assignment :
+  IDENTIFIER selector ASSGNOP expression
+;
+
+expression :
+  simpleExpression
+    {
+      $$ = $1;
+    }
+  | simpleExpression '=' simpleExpression 
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "=");
+      
+      $$ = new Boolean(first_arg == second_arg);
+    }
+  | simpleExpression '#' simpleExpression
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "#");
+      
+      $$ = new Boolean(first_arg != second_arg);
+    }
+  | simpleExpression '<' simpleExpression
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "<");
+      
+      $$ = new Boolean(first_arg < second_arg);
+    }
+  | simpleExpression '>' simpleExpression
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, ">");
+      
+      $$ = new Boolean(first_arg > second_arg);
+    }
+  | simpleExpression LE simpleExpression
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "<=");
+      
+      $$ = new Boolean(first_arg <= second_arg);
+    }
+  | simpleExpression GE simpleExpression
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, ">=");
+      
+      $$ = new Boolean(first_arg >= second_arg);
+    }
+;
+
+simpleExpression :
+  term 
+  | '+' term
+    { 
+      int first_arg;
+      integerUnaryOperatorArgumentsConvert($2, first_arg, "+");
+
+      $$ = new Integer(+first_arg);
+    }
+  | '-' term
+    { 
+      int first_arg;
+      integerUnaryOperatorArgumentsConvert($2, first_arg, "-");
+
+      $$ = new Integer(-first_arg);
+    }
+  | term '+' term
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "+");
+      
+      $$ = new Integer(first_arg + second_arg);
+    }
+  | term '-' term
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "-");
+      
+      $$ = new Integer(first_arg - second_arg);
+    }
+  | term OR term
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "OR");
+      
+      $$ = new Integer(first_arg | second_arg);
+    }
+;
+
+term :
+  factor
+  | factor '*' factor
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "DIV");
+      
+      $$ = new Integer(first_arg * second_arg);
+    }
+  | factor DIV factor
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "DIV");
+      
+      if (second_arg == 0)
+      {
+        throw std::overflow_error("Divide by zero exception");
+      }
+
+      $$ = new Integer(first_arg / second_arg);
+    }
+  | factor MOD factor
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "MOD");
+      
+      if (second_arg == 0)
+      {
+        throw std::overflow_error("Divide by zero exception");
+      }
+
+      $$ = new Integer(first_arg % second_arg);
+    }
+  | factor '&' factor
+    {
+      int first_arg, second_arg;
+      integerBinaryOperatorArgumentsConvert($1, $3, first_arg, second_arg, "&");
+
+      $$ = new Integer(first_arg & second_arg);
+    }
+;
+
+factor :
+  IDENTIFIER selector { /*$$ = getSymbol(*$1)->select(*$2);*/ }
+  | INTEGER { $$ = $1; }
+  | '(' expression ')' { $$ = $2; }
+  | '~' factor 
+    { 
+      int first_arg;
+      integerUnaryOperatorArgumentsConvert($2, first_arg, "~");
+
+      $$ = new Integer(~first_arg);
+    }
+;
+
+selector :
+  /* empty */ { $selector = new Selector(); }
+  | '.' IDENTIFIER { $selector = new FieldSelector(*$IDENTIFIER); }
+  | '[' expression ']' 
+    { 
+      if (!($expression->isInteger()))
+      {
+        throw wrong_type("Wrong array selector type");
+      }
+      $selector = new ArraySelector(getValue<int>($expression)); 
+    }
+;
+
+%%
+
+void yyerror(std::string errorMessage)
+{
+  std::cerr << errorMessage << std::endl;
+}
+
+yyFlexLexer lexer;
+
+int yylex()
+{
+  return lexer.yylex();
+}
+
+int main()
+{
+  yyparse();
+  return 0;
+}

@@ -1,0 +1,2 @@
+/usr/bin/ar cr libstatement.a  CMakeFiles/statement.dir/Statement.cpp.o
+/usr/bin/ranlib libstatement.a

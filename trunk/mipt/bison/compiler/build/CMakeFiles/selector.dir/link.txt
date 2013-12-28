@@ -1,0 +1,2 @@
+/usr/bin/ar cr libselector.a  CMakeFiles/selector.dir/Selector.cpp.o
+/usr/bin/ranlib libselector.a

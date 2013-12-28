@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/Exceptions.hpp
+stdexcept
+-
+string
+-
+
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/Identifier.hpp
+string
+-
+vector
+-
+
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/Value.cpp
+Value.hpp
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/Value.hpp
+
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/Value.hpp
+string
+-
+vector
+-
+unordered_map
+-
+istream
+-
+ostream
+-
+Identifier.hpp
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/Identifier.hpp
+Exceptions.hpp
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/Exceptions.hpp
+
