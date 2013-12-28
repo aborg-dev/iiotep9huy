@@ -1,0 +1,1 @@
+g++       CMakeFiles/oberon.dir/test.tab.cpp.o CMakeFiles/oberon.dir/lex.yy.cc.o  -o oberon -rdynamic libexpression.a libselector.a libcontext.a libtype.a libprocedure.a libstatement.a libdeclarations.a libvalue.a 

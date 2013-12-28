@@ -1,0 +1,499 @@
+%{
+
+#include <FlexLexer.h>
+
+#include "Module.hpp"
+
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#include <fstream>
+
+#define YYDEBUG 1
+
+using std::cerr;
+using std::endl;
+
+int yylex();
+void yyerror(std::string);
+
+%}
+
+%union {
+  Module* module;
+
+  Identifier* identifier;
+  IdentifierList* identifierList;
+  FieldList* fieldList;
+  FieldListSequence* fieldListSequence;
+  Value* value;
+  Type* valueType;
+  ArrayType* arrayType;
+  StructType* structType;
+
+  Declarations* declarations;
+
+  IntegerValue* integer;
+  DoubleValue* double_;
+  StringValue* string;
+  BooleanValue* boolean;
+
+  Expression* expression;
+  ExpressionSequence* expressionSequence;
+  Selector* selector;
+
+  Statement* statement;
+  AssignmentStatement* assignmentStatement;
+  WhileStatement* whileStatement;
+  IfStatement* ifStatement;
+
+  ProcedureCallStatement* procedureCallStatement;
+  ActualParameters* actualParameters;
+
+  ProcedureDeclaration* procedureDeclaration;
+
+  ProcedureHeading* procedureHeading;
+  FormalParameters* formalParameters;
+  FormalParametersSection* formalParametersSection;
+  FormalParametersSectionSequence* formalParametersSectionSequence;
+
+  ProcedureBody* procedureBody;
+
+  StatementSequence* statementSequence;
+}
+
+%start module
+
+%token MODULE PROCEDURE BEGIN_ END CONST TYPE VAR RECORD ARRAY OF WHILE DO ELSE IF ELSIF THEN
+%token<identifier> IDENTIFIER
+%token<integer> INTEGER
+%token<double_> DOUBLE
+%token<boolean> BOOLEAN
+%token<string> STRING
+
+%type <module> module;
+
+%type <valueType> type;
+%type <arrayType> arrayType;
+%type <structType> recordType;
+
+%type <declarations> declarations;
+
+%type <identifierList> identifierList
+%type <fieldList> fieldList
+%type <fieldListSequence> fieldListSequence
+%type <expression> factor
+%type <expression> term
+%type <expression> expression
+%type <expression> simpleExpression
+%type <expressionSequence> expressionSequence
+%type <selector> selector
+
+%type <statement> statement;
+%type <assignmentStatement> assignment;
+%type <ifStatement> ifStatement;
+%type <whileStatement> whileStatement;
+
+%type <procedureCallStatement> procedureCall;
+%type <actualParameters> actualParameters;
+%type <statementSequence> statementSequence;
+
+%type <procedureDeclaration> procedureDeclaration;
+
+%type <procedureHeading> procedureHeading;
+%type <formalParameters> formalParameters;
+%type <formalParametersSection> FPSection;
+%type <formalParametersSectionSequence> FPSectionSequence;
+
+%type <procedureBody> procedureBody;
+
+%token ASSGNOP ":="
+%left '<' '>' '=' NE LE GE
+%left '-' '+' OR '&'
+%left DIV MOD
+%right '^'
+
+%%
+
+module : 
+  MODULE IDENTIFIER[moduleName] ';' 
+    declarations 
+  END IDENTIFIER '.'
+  {
+    //cerr << "declaring new module " << *$moduleName << endl;
+    $module = new Module(*$moduleName, *$declarations);
+  }
+
+  | MODULE IDENTIFIER[moduleName] ';' 
+      declarations
+      BEGIN_
+      {
+        //cerr << "declaring main" << endl;
+      }
+        statementSequence
+    END IDENTIFIER '.'
+    {
+      //cerr << "declaring new module " << *$moduleName << " with main" << endl;
+      $module = new Module(*$moduleName, *$declarations, *$statementSequence);
+      $module->declare();
+      $module->runMain();
+    }
+;
+
+declarations : 
+  /* empty */
+  {
+    //cerr << "starting declarations " << endl;
+    $declarations = new Declarations();
+  }
+  | declarations CONST IDENTIFIER '=' expression ';'
+  {
+    //cerr << "declaring const " << *$IDENTIFIER << endl;
+    $$ = $1;
+    $$->constDeclarations.addDeclaration(ConstDeclaration(*$IDENTIFIER, $expression));
+  }
+  | declarations TYPE IDENTIFIER '=' type ';'
+  {
+    //cerr << "declaring type " << *$IDENTIFIER << endl;
+    $$ = $1;
+    $$->typeDeclarations.addDeclaration(TypeDeclaration(*$IDENTIFIER, $type));
+  }
+  | declarations VAR identifierList ':' type ';'
+  {
+    //cerr << "declaring variables: ";
+    $$ = $1;
+    for (auto& identifier : $identifierList->identifiers)
+    {
+      //cerr << identifier << " ";
+      $$->varDeclarations.addDeclaration(VarDeclaration(identifier, $type));
+    }
+    //cerr << endl;
+  }
+  | declarations procedureDeclaration ';'
+  {
+    //cerr << "declaring procedure: " << 
+      //$procedureDeclaration->procedureHeading->identifier << endl;
+    $$ = $1;
+    $$->procedureDeclarations->addDeclaration($procedureDeclaration);
+  }
+;
+
+procedureDeclaration :
+  procedureHeading ';'
+  procedureBody IDENTIFIER
+  {
+    //cerr << "Declaring procedure " << *$IDENTIFIER << endl;
+    $procedureDeclaration = new ProcedureDeclaration($procedureHeading, $procedureBody);
+  }
+;
+
+procedureBody :
+    declarations 
+    END
+    {
+      //cerr << "Declaring procedure body" << endl;
+      $procedureBody = new ProcedureBody($declarations);
+    }
+  | declarations 
+    BEGIN_ 
+      statementSequence 
+    END
+    {
+      //cerr << "Declaring procedure body with procedureBlock" << endl;
+      $procedureBody = new ProcedureBody($declarations, $statementSequence);
+    }
+;
+
+procedureHeading :
+  PROCEDURE IDENTIFIER 
+  {
+    //cerr << "Declaring procedure " << *$IDENTIFIER << " heading" << endl;
+    $procedureHeading = new ProcedureHeading(*$IDENTIFIER);
+  }
+  | PROCEDURE IDENTIFIER formalParameters
+  {
+    //cerr << "Declaring procedure " << *$IDENTIFIER << " heading with params" << endl;
+    $procedureHeading = new ProcedureHeading(*$IDENTIFIER, $formalParameters);
+  }
+;
+
+formalParameters :
+  '(' FPSectionSequence ')'
+  {
+    $formalParameters = new FormalParameters($FPSectionSequence);
+  }
+;
+
+FPSectionSequence :
+  FPSection
+  {
+    $FPSectionSequence = new FormalParametersSectionSequence();
+    $FPSectionSequence->addFormalParametersSection($FPSection);
+  }
+  | FPSectionSequence ';' FPSection
+  {
+    $$ = $1;
+    $$->addFormalParametersSection($FPSection);
+  }
+;
+
+FPSection : 
+  identifierList ':' type
+  {
+    $FPSection = new FormalParametersSection($identifierList, $type, false);
+  }
+  | VAR identifierList ':' type
+  {
+    $FPSection = new FormalParametersSection($identifierList, $type, true);
+  }
+;
+
+type :
+  IDENTIFIER 
+  {  
+    $type = new NamedType(*$IDENTIFIER);
+  }
+  | arrayType { $$ = $arrayType; }
+  | recordType { $$ = $recordType; }
+;
+
+recordType :
+  RECORD fieldListSequence END
+  {
+    $recordType = new StructType($fieldListSequence);
+  }
+;
+
+fieldListSequence :
+  fieldList
+  {
+    $fieldListSequence = new FieldListSequence(); 
+    $fieldListSequence->addFieldList($fieldList);
+  }
+  | fieldListSequence ';' fieldList
+  {
+    $$ = $1;
+    $$->addFieldList($fieldList);
+  }
+;
+
+fieldList :
+  identifierList ':' type
+  {
+    $fieldList = new FieldList($identifierList, $type);
+  }
+;
+
+arrayType :
+  ARRAY expression OF type
+  {
+    $arrayType = new ArrayType($expression, $type);
+  }
+;
+
+identifierList :
+  IDENTIFIER 
+  {  
+    $identifierList = new IdentifierList();
+    $identifierList->addIdentifier(*$IDENTIFIER);
+  }
+  | identifierList ',' IDENTIFIER
+  {
+    $$ = $1;
+    $$->addIdentifier(*$IDENTIFIER);
+  }
+;
+
+statementSequence :
+  statement 
+  { 
+    $$ = new StatementSequence();
+    $$->addStatement($statement);
+  }
+  | statementSequence ';' statement
+  {
+    $$ = $1;
+    $$->addStatement($statement);
+  }
+;
+
+statement :
+  assignment { //cerr << "assignment statement" << endl; 
+  $statement = $assignment; }
+  | procedureCall { //cerr << "procedureCall statement" << endl; 
+  $statement = $procedureCall; }
+  | ifStatement { //cerr << "if statement" << endl; $statement = 
+  $ifStatement; }
+  | whileStatement { //cerr << "while statement" << endl; $statement = 
+  $whileStatement; }
+;
+
+whileStatement :
+  WHILE expression DO statementSequence END
+  {
+    $whileStatement = new WhileStatement($expression, $statementSequence);
+  }
+;
+
+ifStatement :
+  IF expression 
+    THEN 
+      statementSequence 
+    END
+  {
+    //cerr << "if statement" << endl;
+    $ifStatement = new IfStatement($expression, $statementSequence);
+  }
+  | IF expression 
+      THEN 
+        statementSequence[ifSequence]
+      ELSE
+        statementSequence[elseSequence]
+      END
+  {
+    //cerr << "if statement with else" << endl;
+    $ifStatement = new IfStatement($expression, $ifSequence, $elseSequence);
+  }
+;
+
+procedureCall :
+  IDENTIFIER 
+  {  
+    //cerr << "new procedure call: " << *$IDENTIFIER << "()" << endl;
+    $procedureCall = new ProcedureCallStatement(*$IDENTIFIER, new ActualParameters());
+  }
+  | IDENTIFIER actualParameters
+  {
+    //cerr << "new procedure call: " << *$IDENTIFIER << "(params)" << endl;
+    $procedureCall = new ProcedureCallStatement(*$IDENTIFIER, $actualParameters);
+  }
+;
+
+actualParameters :
+  '(' expressionSequence ')'
+  {
+    $actualParameters = new ActualParameters($expressionSequence);
+  }
+;
+
+expressionSequence :
+  expression 
+  { 
+    $expressionSequence = new ExpressionSequence(); 
+    $expressionSequence->addExpression($expression);
+  }
+  | expressionSequence ',' expression
+  {
+    $$ = $1;
+    $$->addExpression($expression);
+  }
+;
+
+assignment :
+  IDENTIFIER selector ASSGNOP expression 
+  { 
+    $$ = new AssignmentStatement(*$IDENTIFIER, $selector, $expression); 
+  }
+
+;
+
+expression :
+  simpleExpression { $$ = $simpleExpression; }
+  | simpleExpression '=' simpleExpression 
+    { 
+      $$ = new BinaryOperatorExpression($1, BinaryOperator::EQUAL, $3); 
+    }
+  | simpleExpression '#' simpleExpression
+    { 
+      $$ = new BinaryOperatorExpression($1, BinaryOperator::NOT_EQUAL, $3); 
+    }
+  | simpleExpression '<' simpleExpression
+    { 
+      $$ = new BinaryOperatorExpression($1, BinaryOperator::LESS, $3); 
+    }
+  | simpleExpression '>' simpleExpression
+    { 
+      $$ = new BinaryOperatorExpression($1, BinaryOperator::GREATER, $3); 
+    }
+  | simpleExpression LE simpleExpression
+    { 
+      $$ = new BinaryOperatorExpression($1, BinaryOperator::LESS_EQUAL, $3); 
+    }
+  | simpleExpression GE simpleExpression 
+    { 
+      $$ = new BinaryOperatorExpression($1, BinaryOperator::GREATER_EQUAL, $3); 
+    }
+;
+
+simpleExpression :
+  term { $$ = $term; }
+;
+
+term :
+  factor { $$ = $factor; }
+  | term '+' term { $$ = new BinaryOperatorExpression($1, BinaryOperator::PLUS, $3); }
+  | term '-' term { $$ = new BinaryOperatorExpression($1, BinaryOperator::MINUS, $3); }
+  | term OR term { $$ = new BinaryOperatorExpression($1, BinaryOperator::OR, $3); }
+  | '+' factor { $$ = $2; }
+  | '-' factor { $$ = new UnaryOperatorExpression($2, UnaryOperator::NEGATION); }
+  | factor '*' factor { $$ = new BinaryOperatorExpression($1, BinaryOperator::MULTIPLY, $3); }
+  | factor DIV factor { $$ = new BinaryOperatorExpression($1, BinaryOperator::DIV, $3); }
+  | factor MOD factor { $$ = new BinaryOperatorExpression($1, BinaryOperator::MOD, $3); }
+  | factor '&' factor { $$ = new BinaryOperatorExpression($1, BinaryOperator::AND, $3); }
+  | factor '/' factor { $$ = new BinaryOperatorExpression($1, BinaryOperator::DIVIDE, $3); }
+;
+
+factor :
+  IDENTIFIER selector { $$ = new SelectExpression(*$IDENTIFIER, $selector); }
+  | INTEGER { $$ = new ConstExpression($INTEGER); }
+  | DOUBLE { $$ = new ConstExpression($DOUBLE); }
+  | BOOLEAN { $$ = new ConstExpression($BOOLEAN); }
+  | STRING { $$ = new ConstExpression($STRING); }
+  | '(' expression ')' { $$ = $expression; }
+  | '~' factor { $$ = new UnaryOperatorExpression($2, UnaryOperator::COMPLEMENT); }
+;
+
+selector :
+  /* empty */ { $selector = new Selector(); }
+  | selector '.' IDENTIFIER { $$ = new NestedSelector($1, new FieldSelector(*$IDENTIFIER)); }
+  | selector '[' expression ']' { $$ = new NestedSelector($1, new ArraySelector($expression)); }
+;
+
+%%
+
+void yyerror(std::string errorMessage)
+{
+  //std::cerr << errorMessage << std::endl;
+}
+
+yyFlexLexer lexer;
+
+int yylex()
+{
+  return lexer.yylex();
+}
+
+int main(int argc, char* argv[])
+{
+  if (argc != 2)
+  {
+    //std::cerr << "oberon: Usage: oberon FILE" << std::endl;
+    return -1;
+  }
+  std::ifstream sourceFile(argv[1], std::ifstream::in);
+  //std::ofstream debugOutput("output.dbg", std::ofstream::out);
+
+  if (!sourceFile.is_open()) {
+    std::cout << "oberon: error: " << argv[1] << ": No such file or directory" << std::endl;
+    return -1;
+  }
+
+  lexer.switch_streams(&sourceFile);//, &debugOutput);
+
+  yyparse();
+
+  sourceFile.close();
+  //debugOutput.close();
+  return 0;
+}

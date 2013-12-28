@@ -1,0 +1,9 @@
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/context.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/declarations.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/expression.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/oberon.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/procedure.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/selector.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/statement.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/type.dir
+/home/iiotep9huy/Templates/svn/iiotep9huy/mipt/bison/compiler/build/CMakeFiles/value.dir

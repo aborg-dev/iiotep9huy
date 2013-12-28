@@ -1,0 +1,16 @@
+MODULE Test;
+VAR x, y: INTEGER;
+VAR b : BOOLEAN;
+VAR s1, s2, s : STRING;
+VAR d : DOUBLE;
+
+BEGIN
+	x := 3;
+	y := 8;
+	d := 0.3;
+	s1 := "Hello";
+	s2 := ", world";
+	WRITE(-d + d + d + d);
+	s := ((s1 + s2) + ". ") * 20;
+	WRITE(s)
+END Test.

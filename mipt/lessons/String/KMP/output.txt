@@ -1,0 +1,4 @@
+
+findMatches: 2.160 sec
+
+findMatchesAlternative: 1.200 sec

@@ -1,0 +1,2 @@
+/usr/bin/ar cr libtype.a  CMakeFiles/type.dir/Type.cpp.o
+/usr/bin/ranlib libtype.a

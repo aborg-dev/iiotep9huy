@@ -1,0 +1,41 @@
+MODULE Test;
+VAR x, res, i: INTEGER;
+CONST arraySize = 10;
+VAR a : ARRAY arraySize OF ARRAY arraySize OF INTEGER;
+TYPE myType = RECORD 
+	x, y : INTEGER; 
+	a, b, c : INTEGER;
+	arr : ARRAY 5 OF INTEGER
+END;
+VAR t : myType;
+
+PROCEDURE FIB(n : INTEGER; VAR result : INTEGER);
+VAR res1, res2 : INTEGER;
+BEGIN
+	IF ((n = 0) OR (n = 1))
+	THEN
+		result := 1
+	ELSE
+		FIB(n - 1, res1);
+		FIB(n - 2, res2);
+		result := res1 + res2
+	END
+END FIB;
+
+BEGIN
+	x := 0;
+	i := 0;
+	t.a := -7;
+	t.x := 12;
+	t.arr[3] := 11;
+	FIB(30, res);
+	WRITE(res);
+	WRITE(t);
+	WRITE(arraySize);
+	WHILE (i < arraySize)
+	DO
+		a[i][i] := i * i;
+		i := i + 1
+	END;
+	WRITE(a)
+END Test.

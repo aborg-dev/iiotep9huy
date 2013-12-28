@@ -4,7 +4,7 @@ template <typename ElementType>
 class MinIntervalTree
 {
 
-  public:
+public:
 
   MinIntervalTree() {}
   explicit MinIntervalTree(size_t size, const ElementType& element_zero, const ElementType& modify_zero, const ElementType& init_element)
@@ -25,7 +25,7 @@ class MinIntervalTree
     tree->UpdateRange(0, Range(0, tree->size()), Range(left_index, right_index), modify);
   }
 
-  private:
+private:
 
   class MinMerge
   {

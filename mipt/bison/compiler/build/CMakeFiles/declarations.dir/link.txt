@@ -1,0 +1,2 @@
+/usr/bin/ar cr libdeclarations.a  CMakeFiles/declarations.dir/Declarations.cpp.o
+/usr/bin/ranlib libdeclarations.a
